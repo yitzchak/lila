@@ -15,16 +15,8 @@ typedef matrix<double> m2;
 CL_EXPOSE void lla_startup() {
   clbind::package_ pkg(lla_pkg);
 
-  clbind::class_<v1>(pkg, "vector-float")
-      .def_constructor("make-vector-float", clbind::constructor<unsigned long, float>())
-      .def("dimension", &v1::dimension)
-      .def("dot", &v1::dot)
-      .def("inner", &v1::inner);
-  clbind::class_<v2>(pkg, "vector-double")
-      .def_constructor("make-vector-double", clbind::constructor<unsigned long, double>())
-      .def("dimension", &v2::dimension)
-      .def("dot", &v2::dot)
-      .def("inner", &v2::inner);
+  clbind::class_<v1>(pkg, "vector-float").def_constructor("make-vector-float", clbind::constructor<unsigned long, float>());
+  clbind::class_<v2>(pkg, "vector-double").def_constructor("make-vector-double", clbind::constructor<unsigned long, double>());
 
   pkg.def(
       "vector-float",
@@ -56,6 +48,11 @@ CL_EXPOSE void lla_startup() {
       "setf-vref@v1", +[](float value, v1 &x, size_t i) { return x[i] = value; }, clbind::noAutoExport());
   pkg.def(
       "setf-vref@v2", +[](double value, v2 &x, size_t i) { return x[i] = value; }, clbind::noAutoExport());
+
+  pkg.def(
+      "inner@v1@v1", +[](const v1 &x, const v1 &y) { return x.inner(y); }, clbind::noAutoExport());
+  pkg.def(
+      "inner@v2@v2", +[](const v2 &x, const v2 &y) { return x.inner(y); }, clbind::noAutoExport());
 
   clbind::class_<m1>(pkg, "matrix-float")
       .def_constructor("make-matrix-float", clbind::constructor<unsigned long, unsigned long, float>())

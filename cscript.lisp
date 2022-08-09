@@ -6,4 +6,6 @@
            ;#~"src/vector.cc"
            #~"src/lla.cc")
 
-(k:library "cblas" :required t)
+#-darwin (k:library "cblas" :required t)
+
+#+darwin (k:framework "Accelerate")

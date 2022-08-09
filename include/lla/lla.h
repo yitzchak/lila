@@ -1,7 +1,12 @@
 #ifndef LLA_H
 #define LLA_H
 
+#ifdef _TARGET_OS_DARWIN
+#include <Accelerate/Accelerate.h>
+typedef CBLAS_ORDER CBLAS_LAYOUT;
+#else
 #include <cblas.h>
+#endif
 
 namespace lla {
 
@@ -11,15 +16,16 @@ template <class T> class vector {
   using V = vector<T>;
   using M = matrix<T>;
 
+  std::size_t _dimension;
   std::vector<T> data;
 
   friend class matrix<T>;
 
 public:
-  vector(std::size_t dimension, const T &value = 0) : data(dimension, value) {}
-  vector(const V &other) : data(other.data) {}
+  vector(std::size_t dimension, const T &value = 0) : _dimension(dimension), data(dimension, value) {}
+  vector(const V &other) : _dimension(other._dimension), data(other.data) {}
 
-  std::size_t dimension() const { return data.size(); }
+  std::size_t dimension() const { return _dimension; }
 
   T operator[](std::size_t i) const { return data[i]; }
   T &operator[](std::size_t i) { return data[i]; }
