@@ -29,14 +29,21 @@ public:
     std::fill(_data, _data + _dimension, value);
   }
 
-  vector(const V &x) : _dimension(x._dimension) {
-    _data = alloc.allocate(_dimension);
+  vector(const V &x) : _dimension(x._dimension), _size(x._size) {
+    _data = alloc.allocate(_size);
     copy(x);
   }
 
-  ~vector() { alloc.deallocate(_data, _dimension); }
+  template <class U> vector(const vector<U> &x) : _dimension(x.dimension()), _size(x.size()) {
+    _data = alloc.allocate(_size);
+    for (int i = 0; i < _size; i++)
+      _data[i] = x[i];
+  }
+
+  ~vector() { alloc.deallocate(_data, _size); }
 
   std::size_t dimension() const { return _dimension; }
+  std::size_t size() const { return _size; }
 
   T operator[](std::size_t i) const { return _data[i]; }
   T &operator[](std::size_t i) { return _data[i]; }
@@ -197,23 +204,15 @@ template <> r1 r1v::l2_norm_sqr() const { return cblas_sdot(_dimension, _data, 1
 template <> r2 r2v::l2_norm_sqr() const { return cblas_ddot(_dimension, _data, 1, _data, 1); }
 
 template <> c1 c1v::l2_norm_sqr() const {
-#ifdef _TARGET_OS_DARWIN
   c1 result;
   cblas_cdotc_sub(_dimension, _data, 1, _data, 1, &result);
   return result;
-#else
-  return cblas_cdotc(_dimension, _data, 1, _data, 1);
-#endif
 }
 
 template <> c2 c2v::l2_norm_sqr() const {
-#ifdef _TARGET_OS_DARWIN
   c2 result;
   cblas_zdotc_sub(_dimension, _data, 1, _data, 1, &result);
   return result;
-#else
-  return cblas_zdotc(_dimension, _data, 1, _data, 1);
-#endif
 }
 
 template <> r1 r1v::inner(const r1v &x) const { return cblas_sdot(std::min(x._dimension, _dimension), x._data, 1, _data, 1); }
@@ -221,23 +220,15 @@ template <> r1 r1v::inner(const r1v &x) const { return cblas_sdot(std::min(x._di
 template <> r2 r2v::inner(const r2v &x) const { return cblas_ddot(std::min(x._dimension, _dimension), x._data, 1, _data, 1); }
 
 template <> c1 c1v::inner(const c1v &x) const {
-#ifdef _TARGET_OS_DARWIN
   c1 result;
   cblas_cdotc_sub(std::min(_dimension, x._dimension), _data, 1, x._data, 1, &result);
   return result;
-#else
-  return cblas_cdotc(std::min(_dimension, x._dimension), _data, 1, x._data, 1);
-#endif
 }
 
 template <> c2 c2v::inner(const c2v &x) const {
-#ifdef _TARGET_OS_DARWIN
   c2 result;
   cblas_zdotc_sub(std::min(_dimension, x._dimension), _data, 1, x._data, 1, &result);
   return result;
-#else
-  return cblas_zdotc(std::min(_dimension, x._dimension), _data, 1, x._data, 1);
-#endif
 }
 
 template <> r1m r1v::outer(const r1v &x) const {
