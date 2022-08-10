@@ -1,6 +1,6 @@
 (k:includes #~"include/")
 
-(k:systems :lla)
+(k:systems :lila)
 
 (k:sources :iclasp
            ;#~"src/vector.cc"
