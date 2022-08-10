@@ -4,7 +4,7 @@
 
 (k:sources :iclasp
            ;#~"src/vector.cc"
-           #~"src/lla.cc")
+           #~"src/lila.cc")
 
 #-darwin (k:library "cblas" :required t)
 
