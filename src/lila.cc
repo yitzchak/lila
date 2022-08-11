@@ -87,28 +87,24 @@ CL_EXPOSE void lila_startup() {
   clbind::class_<r1v>(pkg, "real-single-vector")
       .def_constructor("make-real-single-vector", clbind::constructor<unsigned long, r1>())
       .def("dimension@r1v", &r1v::dimension, clbind::noAutoExport())
-      .def("inner@r1v", &r1v::inner, clbind::noAutoExport())
       .def("l1-norm@r1v", &r1v::l1_norm, clbind::noAutoExport())
       .def("l2-norm@r1v", &r1v::l2_norm, clbind::noAutoExport())
       .def("l2-norm-sqr@r1v", &r1v::l2_norm_sqr, clbind::noAutoExport());
   clbind::class_<r2v>(pkg, "real-double-vector")
       .def_constructor("make-real-double-vector", clbind::constructor<unsigned long, r2>())
       .def("dimension@r2v", &r2v::dimension, clbind::noAutoExport())
-      .def("inner@r2v", &r2v::inner, clbind::noAutoExport())
       .def("l1-norm@r2v", &r2v::l1_norm, clbind::noAutoExport())
       .def("l2-norm@r2v", &r2v::l2_norm, clbind::noAutoExport())
       .def("l2-norm-sqr@r2v", &r2v::l2_norm_sqr, clbind::noAutoExport());
   clbind::class_<c1v>(pkg, "complex-single-vector")
       .def_constructor("make-complex-single-vector", clbind::constructor<unsigned long, c1>())
       .def("dimension@c1v", &c1v::dimension, clbind::noAutoExport())
-      .def("inner@c1v", &c1v::inner, clbind::noAutoExport())
       .def("l1-norm@c1v", &c1v::l1_norm, clbind::noAutoExport())
       .def("l2-norm@c1v", &c1v::l2_norm, clbind::noAutoExport())
       .def("l2-norm-sqr@c1v", &c1v::l2_norm_sqr, clbind::noAutoExport());
   clbind::class_<c2v>(pkg, "complex-double-vector")
       .def_constructor("make-complex-double-vector", clbind::constructor<unsigned long, c2>())
       .def("dimension@c2v", &c2v::dimension, clbind::noAutoExport())
-      .def("inner@c2v", &c2v::inner, clbind::noAutoExport())
       .def("l1-norm@c2v", &c2v::l1_norm, clbind::noAutoExport())
       .def("l2-norm@c2v", &c2v::l2_norm, clbind::noAutoExport())
       .def("l2-norm-sqr@c2v", &c2v::l2_norm_sqr, clbind::noAutoExport());
@@ -187,9 +183,9 @@ CL_EXPOSE void lila_startup() {
             r2v *r2v_p = wp_sp->castOrNull<r2v>();
             if (c2v_p) {
               res += *c2v_p;
-            } if (c1v_p) {
+            } else if (c1v_p) {
               res += *c1v_p;
-            } if (r2v_p) {
+            } else if (r2v_p) {
               res += *r2v_p;
             } else {
               res += *wp_sp->cast<r1v>();
@@ -223,7 +219,7 @@ CL_EXPOSE void lila_startup() {
           }
           return translate::to_object<c1v>::convert(res);
         }
-        r1v res = r1v(3);
+        r1v res = r1v(dimension);
         for (size_t i = 0; args->remaining_nargs() > 0; i++) {
           res += *gctools::As<core::WrappedPointer_sp>(args->next_arg())->cast<r1v>();
         }

@@ -48,20 +48,19 @@ public:
   T operator[](std::size_t i) const { return _data[i]; }
   T &operator[](std::size_t i) { return _data[i]; }
 
+  V &update(T a, const V &x);
+  V &scale(T a);
   V &copy(const V &x);
-  V &axpy(T a, const V &x);
 
-  V &operator*=(T x);
-  V &operator+=(const V &x) { return axpy(1, x); }
-  V &operator-=(const V &x) { return axpy(-1, x); }
+  V &operator*=(T a) { return scale(a); }
+  V &operator+=(const V &x) { return update(1, x); }
+  V &operator-=(const V &x) { return update(-1, x); }
 
   T l1_norm() const;
   T l2_norm() const;
   T l2_norm_sqr() const;
 
-  T inner(const V &x) const;
-  T dot(const V &x) const { return dot(x); }
-  M outer(const V &x) const;
+  T dot(const V &x) const;
 };
 
 template <class T> class matrix {
@@ -125,13 +124,43 @@ template <class T> std::allocator<T> vector<T>::alloc = std::allocator<T>();
 
 template <class T> std::allocator<T> matrix<T>::alloc = std::allocator<T>();
 
-template <> r1v &r1v::operator*=(r1 x) {
+template <> r1v &r1v::update(r1 a, const r1v &x) {
+  cblas_saxpy(std::min(x._dimension, _dimension), a, x._data, 1, _data, 1);
+  return *this;
+}
+
+template <> r2v &r2v::update(r2 a, const r2v &x) {
+  cblas_daxpy(std::min(x._dimension, _dimension), a, x._data, 1, _data, 1);
+  return *this;
+}
+
+template <> c1v &c1v::update(c1 a, const c1v &x) {
+  cblas_caxpy(std::min(x._dimension, _dimension), &a, x._data, 1, _data, 1);
+  return *this;
+}
+
+template <> c2v &c2v::update(c2 a, const c2v &x) {
+  cblas_zaxpy(std::min(x._dimension, _dimension), &a, x._data, 1, _data, 1);
+  return *this;
+}
+
+template <> r1v &r1v::scale(r1 x) {
   cblas_sscal(_dimension, x, _data, 1);
   return *this;
 }
 
-template <> r2v &r2v::operator*=(r2 x) {
+template <> r2v &r2v::scale(r2 x) {
   cblas_dscal(_dimension, x, _data, 1);
+  return *this;
+}
+
+template <> c1v &c1v::scale(c1 x) {
+  cblas_cscal(_dimension, &x, _data, 1);
+  return *this;
+}
+
+template <> c2v &c2v::scale(c2 x) {
+  cblas_zscal(_dimension, &x, _data, 1);
   return *this;
 }
 
@@ -160,26 +189,6 @@ template <> c2v &c2v::copy(const c2v &x) {
   cblas_zcopy(std::min(x._dimension, _dimension), x._data, 1, _data, 1);
   if (_dimension > x._dimension)
     std::fill(_data + x._dimension, _data + _dimension, 0.0);
-  return *this;
-}
-
-template <> r1v &r1v::axpy(r1 a, const r1v &x) {
-  cblas_saxpy(std::min(x._dimension, _dimension), a, x._data, 1, _data, 1);
-  return *this;
-}
-
-template <> r2v &r2v::axpy(r2 a, const r2v &x) {
-  cblas_daxpy(std::min(x._dimension, _dimension), a, x._data, 1, _data, 1);
-  return *this;
-}
-
-template <> c1v &c1v::axpy(c1 a, const c1v &x) {
-  cblas_caxpy(std::min(x._dimension, _dimension), &a, x._data, 1, _data, 1);
-  return *this;
-}
-
-template <> c2v &c2v::axpy(c2 a, const c2v &x) {
-  cblas_zaxpy(std::min(x._dimension, _dimension), &a, x._data, 1, _data, 1);
   return *this;
 }
 
@@ -215,25 +224,19 @@ template <> c2 c2v::l2_norm_sqr() const {
   return result;
 }
 
-template <> r1 r1v::inner(const r1v &x) const { return cblas_sdot(std::min(x._dimension, _dimension), x._data, 1, _data, 1); }
+template <> r1 r1v::dot(const r1v &x) const { return cblas_sdot(std::min(x._dimension, _dimension), x._data, 1, _data, 1); }
 
-template <> r2 r2v::inner(const r2v &x) const { return cblas_ddot(std::min(x._dimension, _dimension), x._data, 1, _data, 1); }
+template <> r2 r2v::dot(const r2v &x) const { return cblas_ddot(std::min(x._dimension, _dimension), x._data, 1, _data, 1); }
 
-template <> c1 c1v::inner(const c1v &x) const {
+template <> c1 c1v::dot(const c1v &x) const {
   c1 result;
   cblas_cdotc_sub(std::min(_dimension, x._dimension), _data, 1, x._data, 1, &result);
   return result;
 }
 
-template <> c2 c2v::inner(const c2v &x) const {
+template <> c2 c2v::dot(const c2v &x) const {
   c2 result;
   cblas_zdotc_sub(std::min(_dimension, x._dimension), _data, 1, x._data, 1, &result);
-  return result;
-}
-
-template <> r1m r1v::outer(const r1v &x) const {
-  r1m result(dimension(), dimension());
-  cblas_sger(result.layout(), dimension(), dimension(), 1.0f, _data, 1, x._data, 1, result._data, dimension());
   return result;
 }
 
