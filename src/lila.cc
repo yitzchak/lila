@@ -43,41 +43,55 @@ NAMESPACE_PACKAGE_ASSOCIATION(lila, lila_pkg, "LILA");
 
 namespace lila {
 
-void vector_coerce(core::T_sp obj, bool &double_vec, bool &complex_vec, std::size_t &dimension) {
-  core::WrappedPointer_sp p = gctools::As<core::WrappedPointer_sp>(obj);
+void vector_desc(core::T_sp obj, bool &double_vec, bool &complex_vec, std::size_t &dimension) {
+  if (gctools::IsA<core::WrappedPointer_sp>(obj)) {
+    core::WrappedPointer_sp p = gctools::As<core::WrappedPointer_sp>(obj);
 
-  r1v *r1v_p = p->castOrNull<r1v>();
-  if (r1v_p) {
-    dimension = std::max(dimension, r1v_p->dimension());
-    return;
-  }
+    r1v *r1v_p = p->castOrNull<r1v>();
+    if (r1v_p) {
+      dimension = std::max(dimension, r1v_p->dimension());
+      return;
+    }
 
-  r2v *r2v_p = p->castOrNull<r2v>();
-  if (r2v_p) {
-    dimension = std::max(dimension, r2v_p->dimension());
-    double_vec = true;
-    return;
-  }
+    r2v *r2v_p = p->castOrNull<r2v>();
+    if (r2v_p) {
+      dimension = std::max(dimension, r2v_p->dimension());
+      double_vec = true;
+      return;
+    }
 
-  c1v *c1v_p = p->castOrNull<c1v>();
-  if (c1v_p) {
-    dimension = std::max(dimension, c1v_p->dimension());
-    complex_vec = true;
-    return;
-  }
+    c1v *c1v_p = p->castOrNull<c1v>();
+    if (c1v_p) {
+      dimension = std::max(dimension, c1v_p->dimension());
+      complex_vec = true;
+      return;
+    }
 
-  c2v *c2v_p = p->castOrNull<c2v>();
-  if (c2v_p) {
-    dimension = std::max(dimension, c2v_p->dimension());
-    double_vec = true;
-    complex_vec = true;
-    return;
+    c2v *c2v_p = p->castOrNull<c2v>();
+    if (c2v_p) {
+      dimension = std::max(dimension, c2v_p->dimension());
+      double_vec = true;
+      complex_vec = true;
+      return;
+    }
+  } else if (gctools::IsA<core::Number_sp>(obj)) {
+    switch (core::clasp_t_of(gctools::As<core::Number_sp>(obj))) {
+    case core::number_DoubleFloat:
+    case core::number_LongFloat:
+      double_vec = true;
+      break;
+    case core::number_Complex:
+      complex_vec = true;
+      break;
+    default:
+      break;
+    }
   }
 }
 
-void vector_coerce(core::Vaslist_sp args, bool &double_vec, bool &complex_vec, std::size_t &dimension) {
+void vector_desc(core::Vaslist_sp args, bool &double_vec, bool &complex_vec, std::size_t &dimension) {
   for (int i = args->remaining_nargs() - 1; i > -1; --i) {
-    vector_coerce(args->next_arg_indexed(i), double_vec, complex_vec, dimension);
+    vector_desc(args->next_arg_indexed(i), double_vec, complex_vec, dimension);
   }
 }
 
@@ -173,57 +187,120 @@ CL_EXPOSE void lila_startup() {
       +[](core::Vaslist_sp args) {
         bool double_vec = false, complex_vec = false;
         std::size_t dimension = 0;
-        vector_coerce(args, double_vec, complex_vec, dimension);
+        vector_desc(args, double_vec, complex_vec, dimension);
         if (double_vec && complex_vec) {
-          c2v res = c2v(dimension);
+          c2v *res = new c2v(dimension);
           for (size_t i = 0; args->remaining_nargs() > 0; i++) {
             core::WrappedPointer_sp wp_sp = gctools::As<core::WrappedPointer_sp>(args->next_arg());
             c2v *c2v_p = wp_sp->castOrNull<c2v>();
             c1v *c1v_p = wp_sp->castOrNull<c1v>();
             r2v *r2v_p = wp_sp->castOrNull<r2v>();
             if (c2v_p) {
-              res += *c2v_p;
+              res->update(1, *c2v_p);
             } else if (c1v_p) {
-              res += *c1v_p;
+              res->update(1, *c1v_p);
             } else if (r2v_p) {
-              res += *r2v_p;
+              res->update(1, *r2v_p);
             } else {
-              res += *wp_sp->cast<r1v>();
+              res->update(1, *wp_sp->cast<r1v>());
             }
           }
-          return translate::to_object<c2v>::convert(res);
+          return translate::to_object<c2v *, translate::adopt_pointer>::convert(res);
         }
         if (double_vec) {
-          r2v res = r2v(dimension);
+          r2v *res = new r2v(dimension);
           for (size_t i = 0; args->remaining_nargs() > 0; i++) {
             core::WrappedPointer_sp wp_sp = gctools::As<core::WrappedPointer_sp>(args->next_arg());
             r2v *r2v_p = wp_sp->castOrNull<r2v>();
             if (r2v_p) {
-              res += *r2v_p;
+              res->update(1, *r2v_p);
             } else {
-              res += *wp_sp->cast<r1v>();
+              res->update(1, *wp_sp->cast<r1v>());
             }
           }
-          return translate::to_object<r2v>::convert(res);
+          return translate::to_object<r2v *, translate::adopt_pointer>::convert(res);
         }
         if (complex_vec) {
-          c1v res = c1v(dimension);
+          c1v *res = new c1v(dimension);
           for (size_t i = 0; args->remaining_nargs() > 0; i++) {
             core::WrappedPointer_sp wp_sp = gctools::As<core::WrappedPointer_sp>(args->next_arg());
             c1v *c1v_p = wp_sp->castOrNull<c1v>();
             if (c1v_p) {
-              res += *c1v_p;
+              res->update(1, *c1v_p);
             } else {
-              res += *wp_sp->cast<r1v>();
+              res->update(1, *wp_sp->cast<r1v>());
             }
           }
-          return translate::to_object<c1v>::convert(res);
+          return translate::to_object<c1v *, translate::adopt_pointer>::convert(res);
         }
-        r1v res = r1v(dimension);
+        r1v *res = new r1v(dimension);
         for (size_t i = 0; args->remaining_nargs() > 0; i++) {
-          res += *gctools::As<core::WrappedPointer_sp>(args->next_arg())->cast<r1v>();
+          res->update(1, *gctools::As<core::WrappedPointer_sp>(args->next_arg())->cast<r1v>());
         }
-        return translate::to_object<r1v>::convert(res);
+        return translate::to_object<r1v *, translate::adopt_pointer>::convert(res);
+      },
+      "(core:&va-rest args)"_ll);
+
+  pkg.def(
+      "linear-combination",
+      +[](core::Vaslist_sp args) {
+        bool double_vec = false, complex_vec = false;
+        std::size_t dimension = 0;
+        vector_desc(args, double_vec, complex_vec, dimension);
+        if (double_vec && complex_vec) {
+          c2v *res = new c2v(dimension);
+          for (size_t i = 0; args->remaining_nargs() > 0; i++) {
+            std::complex<double> s = translate::from_object<c2>(args->next_arg())._v;
+            core::WrappedPointer_sp wp_sp = gctools::As<core::WrappedPointer_sp>(args->next_arg());
+            c2v *c2v_p = wp_sp->castOrNull<c2v>();
+            c1v *c1v_p = wp_sp->castOrNull<c1v>();
+            r2v *r2v_p = wp_sp->castOrNull<r2v>();
+            if (c2v_p) {
+              res->update(s, *c2v_p);
+            } else if (c1v_p) {
+              res->update(s, *c1v_p);
+            } else if (r2v_p) {
+              res->update(s, *r2v_p);
+            } else {
+              res->update(s, *wp_sp->cast<r1v>());
+            }
+          }
+          return translate::to_object<c2v *, translate::adopt_pointer>::convert(res);
+        }
+        if (double_vec) {
+          r2v *res = new r2v(dimension);
+          for (size_t i = 0; args->remaining_nargs() > 0; i++) {
+            double s = core::clasp_to_double(args->next_arg());
+            core::WrappedPointer_sp wp_sp = gctools::As<core::WrappedPointer_sp>(args->next_arg());
+            r2v *r2v_p = wp_sp->castOrNull<r2v>();
+            if (r2v_p) {
+              res->update(s, *r2v_p);
+            } else {
+              res->update(s, *wp_sp->cast<r1v>());
+            }
+          }
+          return translate::to_object<r2v *, translate::adopt_pointer>::convert(res);
+        }
+        if (complex_vec) {
+          c1v *res = new c1v(dimension);
+          for (size_t i = 0; args->remaining_nargs() > 0; i++) {
+            std::complex<float> s = translate::from_object<c1>(args->next_arg())._v;
+            core::WrappedPointer_sp wp_sp = gctools::As<core::WrappedPointer_sp>(args->next_arg());
+            c1v *c1v_p = wp_sp->castOrNull<c1v>();
+            if (c1v_p) {
+              res->update(s, *c1v_p);
+            } else {
+              res->update(s, *wp_sp->cast<r1v>());
+            }
+          }
+          return translate::to_object<c1v *, translate::adopt_pointer>::convert(res);
+        }
+        r1v *res = new r1v(dimension);
+        for (size_t i = 0; args->remaining_nargs() > 0; i++) {
+          double s = core::clasp_to_float(args->next_arg());
+          res->update(s, *gctools::As<core::WrappedPointer_sp>(args->next_arg())->cast<r1v>());
+        }
+        return translate::to_object<r1v *, translate::adopt_pointer>::convert(res);
       },
       "(core:&va-rest args)"_ll);
 
