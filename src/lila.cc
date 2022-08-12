@@ -38,9 +38,6 @@ template <> struct from_object<std::complex<double>, std::true_type> {
 
 } // namespace translate
 
-PACKAGE_USE("COMMON-LISP");
-NAMESPACE_PACKAGE_ASSOCIATION(lila, lila_pkg, "LILA");
-
 namespace lila {
 
 void vector_desc(core::T_sp obj, bool &double_vec, bool &complex_vec, std::size_t &dimension) {
@@ -96,7 +93,7 @@ void vector_desc(core::Vaslist_sp args, bool &double_vec, bool &complex_vec, std
 }
 
 CL_EXPOSE void lila_startup() {
-  clbind::package_ pkg(lila_pkg);
+/*  clbind::package_ pkg(lila_pkg);
 
   clbind::class_<r1v>(pkg, "real-single-vector")
       .def_constructor("make-real-single-vector", clbind::constructor<unsigned long, r1>())
@@ -323,7 +320,7 @@ CL_EXPOSE void lila_startup() {
   pkg.def(
       "setf-mref@r1m", +[](float value, r1m &x, size_t i, size_t j) { return x(i, j) = value; }, clbind::noAutoExport());
   pkg.def(
-      "setf-mref@r2m", +[](double value, r2m &x, size_t i, size_t j) { return x(i, j) = value; }, clbind::noAutoExport());
+          "setf-mref@r2m", +[](double value, r2m &x, size_t i, size_t j) { return x(i, j) = value; }, clbind::noAutoExport());*/
 }
 
 } // namespace lila

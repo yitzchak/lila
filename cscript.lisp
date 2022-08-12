@@ -3,7 +3,7 @@
 (k:systems :lila)
 
 (k:sources :iclasp
-           ;#~"src/vector.cc"
+           #~"src/vector.cc"
            #~"src/lila.cc")
 
 #-darwin (k:library "cblas" :required t)

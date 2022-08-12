@@ -16,37 +16,31 @@ template <class T> class vector {
   using V = vector<T>;
   using M = matrix<T>;
 
-  static std::allocator<T> alloc;
-
-  std::size_t _dimension, _size;
-  T *_data;
+  std::size_t _dimension;
+  gctools::Vec0<T> _data;
 
   friend class matrix<T>;
 
 public:
-  vector(std::size_t dimension, const T &value = 0) : _dimension(dimension), _size(dimension) {
-    _data = alloc.allocate(_size);
-    std::fill(_data, _data + _dimension, value);
-  }
+  vector(std::size_t dimension = 0, const T &value = 0) : _dimension(dimension) { _data.resize(_dimension, value); }
 
-  vector(const V &x) : _dimension(x._dimension), _size(x._size) {
-    _data = alloc.allocate(_size);
-    copy(x);
-  }
+  vector(const V &x) : _dimension(x._dimension), _data(x._data) {}
 
-  template <class U> vector(const vector<U> &x) : _dimension(x.dimension()), _size(x.size()) {
-    _data = alloc.allocate(_size);
-    for (int i = 0; i < _size; i++)
+  template <class U> vector(const vector<U> &x) : _dimension(x.dimension()) {
+    _data.resize(_dimension);
+    for (int i = 0; i < _dimension; i++)
       _data[i] = x[i];
   }
 
-  ~vector() { alloc.deallocate(_data, _size); }
-
   std::size_t dimension() const { return _dimension; }
-  std::size_t size() const { return _size; }
 
   T operator[](std::size_t i) const { return _data[i]; }
   T &operator[](std::size_t i) { return _data[i]; }
+
+  V &resize(std::size_t dimension = 0, const T &value = 0) {
+    _data.resize(_dimension = dimension, value);
+    return *this;
+  }
 
   V &update(T a, const V &x);
   V &scale(T a);
@@ -120,126 +114,134 @@ typedef matrix<r2> r2m;
 typedef matrix<c1> c1m;
 typedef matrix<c2> c2m;
 
-template <class T> std::allocator<T> vector<T>::alloc = std::allocator<T>();
-
 template <class T> std::allocator<T> matrix<T>::alloc = std::allocator<T>();
 
 template <> r1v &r1v::update(r1 a, const r1v &x) {
-  cblas_saxpy(std::min(x._dimension, _dimension), a, x._data, 1, _data, 1);
+  cblas_saxpy(std::min(x._dimension, _dimension), a, x._data.data(), 1, _data.data(), 1);
   return *this;
 }
 
 template <> r2v &r2v::update(r2 a, const r2v &x) {
-  cblas_daxpy(std::min(x._dimension, _dimension), a, x._data, 1, _data, 1);
+  cblas_daxpy(std::min(x._dimension, _dimension), a, x._data.data(), 1, _data.data(), 1);
   return *this;
 }
 
 template <> c1v &c1v::update(c1 a, const c1v &x) {
-  cblas_caxpy(std::min(x._dimension, _dimension), &a, x._data, 1, _data, 1);
+  cblas_caxpy(std::min(x._dimension, _dimension), &a, x._data.data(), 1, _data.data(), 1);
   return *this;
 }
 
 template <> c2v &c2v::update(c2 a, const c2v &x) {
-  cblas_zaxpy(std::min(x._dimension, _dimension), &a, x._data, 1, _data, 1);
+  cblas_zaxpy(std::min(x._dimension, _dimension), &a, x._data.data(), 1, _data.data(), 1);
   return *this;
 }
 
 template <> r1v &r1v::scale(r1 x) {
-  cblas_sscal(_dimension, x, _data, 1);
+  cblas_sscal(_dimension, x, _data.data(), 1);
   return *this;
 }
 
 template <> r2v &r2v::scale(r2 x) {
-  cblas_dscal(_dimension, x, _data, 1);
+  cblas_dscal(_dimension, x, _data.data(), 1);
   return *this;
 }
 
 template <> c1v &c1v::scale(c1 x) {
-  cblas_cscal(_dimension, &x, _data, 1);
+  cblas_cscal(_dimension, &x, _data.data(), 1);
   return *this;
 }
 
 template <> c2v &c2v::scale(c2 x) {
-  cblas_zscal(_dimension, &x, _data, 1);
+  cblas_zscal(_dimension, &x, _data.data(), 1);
   return *this;
 }
 
 template <> r1v &r1v::copy(const r1v &x) {
-  cblas_scopy(std::min(x._dimension, _dimension), x._data, 1, _data, 1);
+  cblas_scopy(std::min(x._dimension, _dimension), x._data.data(), 1, _data.data(), 1);
   if (_dimension > x._dimension)
-    std::fill(_data + x._dimension, _data + _dimension, 0.0f);
+    std::fill(_data.data() + x._dimension, _data.data() + _dimension, 0.0f);
   return *this;
 }
 
 template <> r2v &r2v::copy(const r2v &x) {
-  cblas_dcopy(std::min(x._dimension, _dimension), x._data, 1, _data, 1);
+  cblas_dcopy(std::min(x._dimension, _dimension), x._data.data(), 1, _data.data(), 1);
   if (_dimension > x._dimension)
-    std::fill(_data + x._dimension, _data + _dimension, 0.0);
+    std::fill(_data.data() + x._dimension, _data.data() + _dimension, 0.0);
   return *this;
 }
 
 template <> c1v &c1v::copy(const c1v &x) {
-  cblas_ccopy(std::min(x._dimension, _dimension), x._data, 1, _data, 1);
+  cblas_ccopy(std::min(x._dimension, _dimension), x._data.data(), 1, _data.data(), 1);
   if (_dimension > x._dimension)
-    std::fill(_data + x._dimension, _data + _dimension, 0.0f);
+    std::fill(_data.data() + x._dimension, _data.data() + _dimension, 0.0f);
   return *this;
 }
 
 template <> c2v &c2v::copy(const c2v &x) {
-  cblas_zcopy(std::min(x._dimension, _dimension), x._data, 1, _data, 1);
+  cblas_zcopy(std::min(x._dimension, _dimension), x._data.data(), 1, _data.data(), 1);
   if (_dimension > x._dimension)
-    std::fill(_data + x._dimension, _data + _dimension, 0.0);
+    std::fill(_data.data() + x._dimension, _data.data() + _dimension, 0.0);
   return *this;
 }
 
-template <> r1 r1v::l1_norm() const { return cblas_sasum(_dimension, _data, 1); }
+template <> r1 r1v::l1_norm() const { return cblas_sasum(_dimension, _data.data(), 1); }
 
-template <> r2 r2v::l1_norm() const { return cblas_dasum(_dimension, _data, 1); }
+template <> r2 r2v::l1_norm() const { return cblas_dasum(_dimension, _data.data(), 1); }
 
-template <> c1 c1v::l1_norm() const { return cblas_scasum(_dimension, _data, 1); }
+template <> c1 c1v::l1_norm() const { return cblas_scasum(_dimension, _data.data(), 1); }
 
-template <> c2 c2v::l1_norm() const { return cblas_dzasum(_dimension, _data, 1); }
+template <> c2 c2v::l1_norm() const { return cblas_dzasum(_dimension, _data.data(), 1); }
 
-template <> r1 r1v::l2_norm() const { return cblas_snrm2(_dimension, _data, 1); }
+template <> r1 r1v::l2_norm() const { return cblas_snrm2(_dimension, _data.data(), 1); }
 
-template <> r2 r2v::l2_norm() const { return cblas_dnrm2(_dimension, _data, 1); }
+template <> r2 r2v::l2_norm() const { return cblas_dnrm2(_dimension, _data.data(), 1); }
 
-template <> c1 c1v::l2_norm() const { return cblas_scnrm2(_dimension, _data, 1); }
+template <> c1 c1v::l2_norm() const { return cblas_scnrm2(_dimension, _data.data(), 1); }
 
-template <> c2 c2v::l2_norm() const { return cblas_dznrm2(_dimension, _data, 1); }
+template <> c2 c2v::l2_norm() const { return cblas_dznrm2(_dimension, _data.data(), 1); }
 
-template <> r1 r1v::l2_norm_sqr() const { return cblas_sdot(_dimension, _data, 1, _data, 1); }
+template <> r1 r1v::l2_norm_sqr() const { return cblas_sdot(_dimension, _data.data(), 1, _data.data(), 1); }
 
-template <> r2 r2v::l2_norm_sqr() const { return cblas_ddot(_dimension, _data, 1, _data, 1); }
+template <> r2 r2v::l2_norm_sqr() const { return cblas_ddot(_dimension, _data.data(), 1, _data.data(), 1); }
 
 template <> c1 c1v::l2_norm_sqr() const {
   c1 result;
-  cblas_cdotc_sub(_dimension, _data, 1, _data, 1, &result);
+  cblas_cdotc_sub(_dimension, _data.data(), 1, _data.data(), 1, &result);
   return result;
 }
 
 template <> c2 c2v::l2_norm_sqr() const {
   c2 result;
-  cblas_zdotc_sub(_dimension, _data, 1, _data, 1, &result);
+  cblas_zdotc_sub(_dimension, _data.data(), 1, _data.data(), 1, &result);
   return result;
 }
 
-template <> r1 r1v::dot(const r1v &x) const { return cblas_sdot(std::min(x._dimension, _dimension), x._data, 1, _data, 1); }
+template <> r1 r1v::dot(const r1v &x) const {
+  return cblas_sdot(std::min(x._dimension, _dimension), x._data.data(), 1, _data.data(), 1);
+}
 
-template <> r2 r2v::dot(const r2v &x) const { return cblas_ddot(std::min(x._dimension, _dimension), x._data, 1, _data, 1); }
+template <> r2 r2v::dot(const r2v &x) const {
+  return cblas_ddot(std::min(x._dimension, _dimension), x._data.data(), 1, _data.data(), 1);
+}
 
 template <> c1 c1v::dot(const c1v &x) const {
   c1 result;
-  cblas_cdotc_sub(std::min(_dimension, x._dimension), _data, 1, x._data, 1, &result);
+  cblas_cdotc_sub(std::min(_dimension, x._dimension), _data.data(), 1, x._data.data(), 1, &result);
   return result;
 }
 
 template <> c2 c2v::dot(const c2v &x) const {
   c2 result;
-  cblas_zdotc_sub(std::min(_dimension, x._dimension), _data, 1, x._data, 1, &result);
+  cblas_zdotc_sub(std::min(_dimension, x._dimension), _data.data(), 1, x._data.data(), 1, &result);
   return result;
 }
 
 } // namespace lila
+
+PACKAGE_USE("COMMON-LISP");
+NAMESPACE_PACKAGE_ASSOCIATION(lila, lila_pkg, "LILA");
+
+#include <lila/vector.fwd.h>
+#include <lila/vector.h>
 
 #endif
