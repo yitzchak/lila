@@ -18,55 +18,7 @@
 
 (set-dispatch-macro-character #\# #\V #'read-vector)
 
-(defmethod print-object ((object real-double-vector) stream)
-  (if *print-readably*
-      (loop for i below (dimension object)
-            finally (write-char #\) stream)
-            when (cl:zerop i)
-              do (write-string "#V(" stream)
-            else
-              do (write-char #\Space stream)
-            do (write (vref object i) :stream stream))
-      (print-unreadable-object (object stream :type t)
-        (loop for i below (dimension object)
-              unless (cl:zerop i)
-                do (write-char #\Space stream)
-              do (write (vref object i) :stream stream))))
-  object)
-
-(defmethod print-object ((object real-single-vector) stream)
-  (if *print-readably*
-      (loop for i below (dimension object)
-            finally (write-char #\) stream)
-            when (cl:zerop i)
-              do (write-string "#V(" stream)
-            else
-              do (write-char #\Space stream)
-            do (write (vref object i) :stream stream))
-      (print-unreadable-object (object stream :type t)
-        (loop for i below (dimension object)
-              unless (cl:zerop i)
-                do (write-char #\Space stream)
-              do (write (vref object i) :stream stream))))
-  object)
-
-(defmethod print-object ((object complex-double-vector) stream)
-  (if *print-readably*
-      (loop for i below (dimension object)
-            finally (write-char #\) stream)
-            when (cl:zerop i)
-              do (write-string "#V(" stream)
-            else
-              do (write-char #\Space stream)
-            do (write (vref object i) :stream stream))
-      (print-unreadable-object (object stream :type t)
-        (loop for i below (dimension object)
-              unless (cl:zerop i)
-                do (write-char #\Space stream)
-              do (write (vref object i) :stream stream))))
-  object)
-
-(defmethod print-object ((object complex-single-vector) stream)
+(defmethod print-object ((object lvector) stream)
   (if *print-readably*
       (loop for i below (dimension object)
             finally (write-char #\) stream)

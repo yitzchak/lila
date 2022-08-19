@@ -4,6 +4,9 @@
 
 namespace lila {
 
+inline c1 lila_to_c1(core::T_sp x) { return translate::from_object<c1>(x)._v; }
+inline c2 lila_to_c2(core::T_sp x) { return translate::from_object<c2>(x)._v; }
+
 void vector_desc(core::T_sp obj, bool &double_vec, bool &complex_vec, std::size_t &dimension) {
   if (gctools::IsA<RealSingleVector_sp>(obj)) {
     dimension = std::max(dimension, gctools::As<RealSingleVector_sp>(obj)->dimension());
@@ -180,78 +183,139 @@ CL_DEFMETHOD c2 ComplexDoubleVector_O::l2_norm_sqr() const { return _Value.l2_no
 
 // CL_LAMBDA(x y)
 CL_LISPIFY_NAME("dot");
-CL_DEFUN core::T_sp lila__dot(core::T_sp x, core::T_sp y) {
-  if (gctools::IsA<RealSingleVector_sp>(x)) {
-    if (gctools::IsA<RealSingleVector_sp>(y)) {
-      return core::clasp_make_single_float(
-          dot(gctools::As<RealSingleVector_sp>(x)->_Value, gctools::As<RealSingleVector_sp>(y)->_Value));
-    }
-    if (gctools::IsA<RealDoubleVector_sp>(y)) {
-      return core::clasp_make_double_float(
-          dot((r2v)gctools::As<RealSingleVector_sp>(x)->_Value, gctools::As<RealDoubleVector_sp>(y)->_Value));
-    }
-    if (gctools::IsA<ComplexSingleVector_sp>(y)) {
-      return translate::to_object<c1>::convert(
-          dot((c1v)gctools::As<RealSingleVector_sp>(x)->_Value, gctools::As<ComplexSingleVector_sp>(y)->_Value));
-    }
-    if (gctools::IsA<ComplexDoubleVector_sp>(y)) {
-      return translate::to_object<c2>::convert(
-          dot((c2v)gctools::As<RealSingleVector_sp>(x)->_Value, gctools::As<ComplexDoubleVector_sp>(y)->_Value));
-    }
-  } else if (gctools::IsA<RealDoubleVector_sp>(x)) {
-    if (gctools::IsA<RealSingleVector_sp>(y)) {
-      return core::clasp_make_double_float(
-          dot(gctools::As<RealDoubleVector_sp>(x)->_Value, (r2v)gctools::As<RealSingleVector_sp>(y)->_Value));
-    }
+CL_DEFUN core::T_sp lila__dot(Vector_sp x, Vector_sp y) {
+  if (gctools::IsA<RealDoubleVector_sp>(x)) {
     if (gctools::IsA<RealDoubleVector_sp>(y)) {
       return core::clasp_make_double_float(
           dot(gctools::As<RealDoubleVector_sp>(x)->_Value, gctools::As<RealDoubleVector_sp>(y)->_Value));
-    }
-    if (gctools::IsA<ComplexSingleVector_sp>(y)) {
-      return translate::to_object<c2>::convert(
-          dot((c2v)gctools::As<RealDoubleVector_sp>(x)->_Value, (c2v)gctools::As<ComplexSingleVector_sp>(y)->_Value));
     }
     if (gctools::IsA<ComplexDoubleVector_sp>(y)) {
       return translate::to_object<c2>::convert(
           dot((c2v)gctools::As<RealDoubleVector_sp>(x)->_Value, gctools::As<ComplexDoubleVector_sp>(y)->_Value));
     }
-  } else if (gctools::IsA<ComplexSingleVector_sp>(x)) {
     if (gctools::IsA<RealSingleVector_sp>(y)) {
-      return translate::to_object<c1>::convert(
-          dot(gctools::As<ComplexSingleVector_sp>(x)->_Value, (c1v)gctools::As<RealSingleVector_sp>(y)->_Value));
+      return core::clasp_make_double_float(
+          dot(gctools::As<RealDoubleVector_sp>(x)->_Value, (r2v)gctools::As<RealSingleVector_sp>(y)->_Value));
     }
-    if (gctools::IsA<RealDoubleVector_sp>(y)) {
-      return translate::to_object<c2>::convert(
-          dot((c2v)gctools::As<ComplexSingleVector_sp>(x)->_Value, (c2v)gctools::As<RealDoubleVector_sp>(y)->_Value));
-    }
-    if (gctools::IsA<ComplexSingleVector_sp>(y)) {
-      return translate::to_object<c1>::convert(
-          dot(gctools::As<ComplexSingleVector_sp>(x)->_Value, gctools::As<ComplexSingleVector_sp>(y)->_Value));
-    }
-    if (gctools::IsA<ComplexDoubleVector_sp>(y)) {
-      return translate::to_object<c2>::convert(
-          dot((c2v)gctools::As<ComplexSingleVector_sp>(x)->_Value, gctools::As<ComplexDoubleVector_sp>(y)->_Value));
-    }
-  } else if (gctools::IsA<ComplexDoubleVector_sp>(x)) {
-    if (gctools::IsA<RealSingleVector_sp>(y)) {
-      return translate::to_object<c2>::convert(
-          dot(gctools::As<ComplexDoubleVector_sp>(x)->_Value, (c2v)gctools::As<RealSingleVector_sp>(y)->_Value));
-    }
+    return translate::to_object<c2>::convert(
+        dot((c2v)gctools::As<RealDoubleVector_sp>(x)->_Value, (c2v)gctools::As<ComplexSingleVector_sp>(y)->_Value));
+  }
+
+  if (gctools::IsA<ComplexDoubleVector_sp>(x)) {
     if (gctools::IsA<RealDoubleVector_sp>(y)) {
       return translate::to_object<c2>::convert(
           dot(gctools::As<ComplexDoubleVector_sp>(x)->_Value, (c2v)gctools::As<RealDoubleVector_sp>(y)->_Value));
-    }
-    if (gctools::IsA<ComplexSingleVector_sp>(y)) {
-      return translate::to_object<c2>::convert(
-          dot(gctools::As<ComplexDoubleVector_sp>(x)->_Value, (c2v)gctools::As<ComplexSingleVector_sp>(y)->_Value));
     }
     if (gctools::IsA<ComplexDoubleVector_sp>(y)) {
       return translate::to_object<c2>::convert(
           dot((c2v)gctools::As<ComplexDoubleVector_sp>(x)->_Value, gctools::As<ComplexDoubleVector_sp>(y)->_Value));
     }
+    if (gctools::IsA<RealSingleVector_sp>(y)) {
+      return translate::to_object<c2>::convert(
+          dot(gctools::As<ComplexDoubleVector_sp>(x)->_Value, (c2v)gctools::As<RealSingleVector_sp>(y)->_Value));
+    }
+    return translate::to_object<c2>::convert(
+        dot(gctools::As<ComplexDoubleVector_sp>(x)->_Value, (c2v)gctools::As<ComplexSingleVector_sp>(y)->_Value));
   }
 
-  return nil<core::T_O>();
+  if (gctools::IsA<RealSingleVector_sp>(x)) {
+    if (gctools::IsA<RealDoubleVector_sp>(y)) {
+      return core::clasp_make_double_float(
+          dot((r2v)gctools::As<RealSingleVector_sp>(x)->_Value, gctools::As<RealDoubleVector_sp>(y)->_Value));
+    }
+    if (gctools::IsA<ComplexDoubleVector_sp>(y)) {
+      return translate::to_object<c2>::convert(
+          dot((c2v)gctools::As<RealSingleVector_sp>(x)->_Value, gctools::As<ComplexDoubleVector_sp>(y)->_Value));
+    }
+    if (gctools::IsA<RealSingleVector_sp>(y)) {
+      return core::clasp_make_single_float(
+          dot(gctools::As<RealSingleVector_sp>(x)->_Value, gctools::As<RealSingleVector_sp>(y)->_Value));
+    }
+    return translate::to_object<c1>::convert(
+        dot((c1v)gctools::As<RealSingleVector_sp>(x)->_Value, gctools::As<ComplexSingleVector_sp>(y)->_Value));
+  }
+
+  if (gctools::IsA<RealDoubleVector_sp>(y)) {
+    return translate::to_object<c2>::convert(
+        dot((c2v)gctools::As<ComplexSingleVector_sp>(x)->_Value, (c2v)gctools::As<RealDoubleVector_sp>(y)->_Value));
+  }
+  if (gctools::IsA<ComplexDoubleVector_sp>(y)) {
+    return translate::to_object<c2>::convert(
+        dot((c2v)gctools::As<ComplexSingleVector_sp>(x)->_Value, gctools::As<ComplexDoubleVector_sp>(y)->_Value));
+  }
+  if (gctools::IsA<RealSingleVector_sp>(y)) {
+    return translate::to_object<c1>::convert(
+        dot(gctools::As<ComplexSingleVector_sp>(x)->_Value, (c1v)gctools::As<RealSingleVector_sp>(y)->_Value));
+  }
+  return translate::to_object<c1>::convert(
+      dot(gctools::As<ComplexSingleVector_sp>(x)->_Value, gctools::As<ComplexSingleVector_sp>(y)->_Value));
+}
+
+CL_LAMBDA(core:&va-rest args)
+CL_LISPIFY_NAME("linear-combination");
+CL_DEFUN Vector_sp lila__linear_combination(core::Vaslist_sp args) {
+  bool double_vec = false, complex_vec = false;
+  std::size_t dimension = 0;
+
+  vector_desc(args, double_vec, complex_vec, dimension);
+
+  if (double_vec && !complex_vec) {
+    auto res = gctools::GC<RealDoubleVector_O>::allocate_with_default_constructor();
+    res->_Value.resize(dimension);
+    while (args->remaining_nargs() > 0) {
+      double s = core::clasp_to_double(args->next_arg());
+      Vector_sp x = gctools::As<Vector_sp>(args->next_arg());
+      if (gctools::IsA<RealDoubleVector_sp>(x)) {
+        res->_Value.update(s, gctools::As<RealDoubleVector_sp>(x)->_Value);
+      } else {
+        res->_Value.update(s, (r2v)gctools::As<RealSingleVector_sp>(x)->_Value);
+      }
+    }
+    return res;
+  }
+
+  if (double_vec && complex_vec) {
+    auto res = gctools::GC<ComplexDoubleVector_O>::allocate_with_default_constructor();
+    res->_Value.resize(dimension);
+    while (args->remaining_nargs() > 0) {
+      c2 s = lila_to_c2(args->next_arg());
+      Vector_sp x = gctools::As<Vector_sp>(args->next_arg());
+      if (gctools::IsA<ComplexDoubleVector_sp>(x)) {
+        res->_Value.update(s, gctools::As<ComplexDoubleVector_sp>(x)->_Value);
+      } else if (gctools::IsA<RealDoubleVector_sp>(x)) {
+        res->_Value.update(s, (c2v)gctools::As<RealDoubleVector_sp>(x)->_Value);
+      } else if (gctools::IsA<ComplexSingleVector_sp>(x)) {
+        res->_Value.update(s, (c2v)gctools::As<ComplexSingleVector_sp>(x)->_Value);
+      } else {
+        res->_Value.update(s, (c2v)gctools::As<RealSingleVector_sp>(x)->_Value);
+      }
+    }
+    return res;
+  }
+
+  if (!complex_vec) {
+    auto res = gctools::GC<RealSingleVector_O>::allocate_with_default_constructor();
+    res->_Value.resize(dimension);
+    while (args->remaining_nargs() > 0) {
+      res->_Value.update(core::clasp_to_float(args->next_arg()), gctools::As<RealSingleVector_sp>(args->next_arg())->_Value);
+    }
+    return res;
+  }
+
+  {
+    auto res = gctools::GC<ComplexSingleVector_O>::allocate_with_default_constructor();
+    res->_Value.resize(dimension);
+    while (args->remaining_nargs() > 0) {
+      c1 s = lila_to_c1(args->next_arg());
+      Vector_sp x = gctools::As<Vector_sp>(args->next_arg());
+      if (gctools::IsA<ComplexSingleVector_sp>(x)) {
+        res->_Value.update(s, gctools::As<ComplexSingleVector_sp>(x)->_Value);
+      } else {
+        res->_Value.update(s, (c1v)gctools::As<RealSingleVector_sp>(x)->_Value);
+      }
+    }
+    return res;
+  }
 }
 
 } // Namespace lila

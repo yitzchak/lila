@@ -10,6 +10,7 @@ typedef CBLAS_ORDER CBLAS_LAYOUT;
 
 PACKAGE_USE("COMMON-LISP");
 NAMESPACE_PACKAGE_ASSOCIATION(lila, lila_pkg, "LILA");
+//SYMBOL_SHADOW_EXPORT_SC_(lila_pkg, vector);
 
 namespace lila {
 
@@ -29,7 +30,7 @@ public:
 
   vector(const V &x) : _dimension(x._dimension), _data(x._data) {}
 
-  //template <class U> operator vector<U>() const { return vector<U>(*this); }
+  // template <class U> operator vector<U>() const { return vector<U>(*this); }
 
   inline std::size_t dimension() const { return _dimension; }
   inline T *data() { return _data.data(); }
@@ -232,13 +233,9 @@ template <> inline c2 c2v::l2_norm_sqr() const {
   return result;
 }
 
-inline r1 dot(const r1v &x, const r1v &y) {
-  return cblas_sdot(std::min(x.dimension(), y.dimension()), x.data(), 1, y.data(), 1);
-}
+inline r1 dot(const r1v &x, const r1v &y) { return cblas_sdot(std::min(x.dimension(), y.dimension()), x.data(), 1, y.data(), 1); }
 
-inline r2 dot(const r2v &x, const r2v &y) {
-  return cblas_ddot(std::min(x.dimension(), y.dimension()), x.data(), 1, y.data(), 1);
-}
+inline r2 dot(const r2v &x, const r2v &y) { return cblas_ddot(std::min(x.dimension(), y.dimension()), x.data(), 1, y.data(), 1); }
 
 inline c1 dot(const c1v &x, const c1v &y) {
   c1 result;
@@ -252,10 +249,19 @@ inline c2 dot(const c2v &x, const c2v &y) {
   return result;
 }
 
+SMART(Vector)
+
+class Vector_O : public core::CxxObject_O {
+  LISP_ABSTRACT_CLASS(lila, lila_pkg, Vector_O, "lvector", core::CxxObject_O);
+
+public:
+  Vector_O() {}
+};
+
 SMART(RealSingleVector);
 
-class RealSingleVector_O : public core::CxxObject_O {
-  LISP_CLASS(lila, lila_pkg, RealSingleVector_O, "REAL-SINGLE-VECTOR", core::CxxObject_O);
+class RealSingleVector_O : public Vector_O {
+  LISP_CLASS(lila, lila_pkg, RealSingleVector_O, "REAL-SINGLE-VECTOR", Vector_O);
   r1v _Value;
 
 public:
@@ -278,8 +284,8 @@ public:
 
 SMART(RealDoubleVector);
 
-class RealDoubleVector_O : public core::CxxObject_O {
-  LISP_CLASS(lila, lila_pkg, RealDoubleVector_O, "REAL-DOUBLE-VECTOR", core::CxxObject_O);
+class RealDoubleVector_O : public Vector_O {
+  LISP_CLASS(lila, lila_pkg, RealDoubleVector_O, "REAL-DOUBLE-VECTOR", Vector_O);
   r2v _Value;
 
 public:
@@ -299,8 +305,8 @@ public:
 
 SMART(ComplexSingleVector);
 
-class ComplexSingleVector_O : public core::CxxObject_O {
-  LISP_CLASS(lila, lila_pkg, ComplexSingleVector_O, "COMPLEX-SINGLE-VECTOR", core::CxxObject_O);
+class ComplexSingleVector_O : public Vector_O {
+  LISP_CLASS(lila, lila_pkg, ComplexSingleVector_O, "COMPLEX-SINGLE-VECTOR", Vector_O);
   c1v _Value;
 
 public:
@@ -320,8 +326,8 @@ public:
 
 SMART(ComplexDoubleVector);
 
-class ComplexDoubleVector_O : public core::CxxObject_O {
-  LISP_CLASS(lila, lila_pkg, ComplexDoubleVector_O, "COMPLEX-DOUBLE-VECTOR", core::CxxObject_O);
+class ComplexDoubleVector_O : public Vector_O {
+  LISP_CLASS(lila, lila_pkg, ComplexDoubleVector_O, "COMPLEX-DOUBLE-VECTOR", Vector_O);
   c2v _Value;
 
 public:
