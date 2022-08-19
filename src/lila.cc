@@ -2,42 +2,6 @@
 #include <clasp/core/translators.h>
 #include <lila/lila.h>
 
-namespace translate {
-
-template <class T> struct to_object<std::complex<T>> {
-  static core::T_sp convert(const std::complex<T> &v) { return core::Complex_O::create(v.real(), v.imag()); }
-};
-
-template <> struct from_object<std::complex<float>, std::true_type> {
-  typedef std::complex<float> DeclareType;
-  DeclareType _v;
-
-  from_object(core::T_sp o) {
-    if (gctools::IsA<core::Complex_sp>(o)) {
-      _v = std::complex<double>(core::clasp_to_float(gctools::As<core::Complex_sp>(o)->real()),
-                                core::clasp_to_float(gctools::As<core::Complex_sp>(o)->imaginary()));
-    } else {
-      _v = core::clasp_to_float(o);
-    }
-  }
-};
-
-template <> struct from_object<std::complex<double>, std::true_type> {
-  typedef std::complex<double> DeclareType;
-  DeclareType _v;
-
-  from_object(core::T_sp o) {
-    if (gctools::IsA<core::Complex_sp>(o)) {
-      _v = std::complex<double>(core::clasp_to_double(gctools::As<core::Complex_sp>(o)->real()),
-                                core::clasp_to_double(gctools::As<core::Complex_sp>(o)->imaginary()));
-    } else {
-      _v = core::clasp_to_double(o);
-    }
-  }
-};
-
-} // namespace translate
-
 namespace lila {
 
 CL_EXPOSE void lila_startup() {

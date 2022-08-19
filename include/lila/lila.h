@@ -29,13 +29,17 @@ public:
 
   vector(const V &x) : _dimension(x._dimension), _data(x._data) {}
 
-  template <class U> vector(const vector<U> &x) : _dimension(x.dimension()) {
-    _data.resize(_dimension);
-    for (int i = 0; i < _dimension; i++)
-      _data[i] = x[i];
-  }
+  //template <class U> operator vector<U>() const { return vector<U>(*this); }
 
   inline std::size_t dimension() const { return _dimension; }
+  inline T *data() { return _data.data(); }
+  inline const T *data() const { return _data.data(); }
+
+  template <class U> vector(const vector<U> &x) : _dimension(x.dimension()) {
+    _data.resize(dimension());
+    for (int i = 0; i < dimension(); i++)
+      _data[i] = x[i];
+  }
 
   inline T operator[](std::size_t i) const { return _data[i]; }
   inline T &operator[](std::size_t i) { return _data[i]; }
@@ -45,7 +49,8 @@ public:
     return *this;
   }
 
-  V &update(T a, const V &x);
+  // V &update(T a, const V &x);
+  template <class U> V &update(U a, const vector<U> &x);
   V &scale(T a);
   V &copy(const V &x);
 
@@ -56,8 +61,6 @@ public:
   T l1_norm() const;
   T l2_norm() const;
   T l2_norm_sqr() const;
-
-  T dot(const V &x) const;
 };
 
 template <class T> class matrix {
@@ -119,123 +122,133 @@ typedef matrix<c2> c2m;
 
 template <class T> std::allocator<T> matrix<T>::alloc = std::allocator<T>();
 
-template <> inline r1v &r1v::update(r1 a, const r1v &x) {
-  cblas_saxpy(std::min(x._dimension, _dimension), a, x._data.data(), 1, _data.data(), 1);
+template <> template <> inline r1v &r1v::update(r1 a, const r1v &x) {
+  cblas_saxpy(std::min(x.dimension(), dimension()), a, x.data(), 1, data(), 1);
   return *this;
 }
 
-template <> inline r2v &r2v::update(r2 a, const r2v &x) {
-  cblas_daxpy(std::min(x._dimension, _dimension), a, x._data.data(), 1, _data.data(), 1);
+template <> template <> inline r2v &r2v::update(r2 a, const r2v &x) {
+  cblas_daxpy(std::min(x.dimension(), dimension()), a, x.data(), 1, data(), 1);
   return *this;
 }
 
-template <> inline c1v &c1v::update(c1 a, const c1v &x) {
-  cblas_caxpy(std::min(x._dimension, _dimension), &a, x._data.data(), 1, _data.data(), 1);
+template <> template <> inline c1v &c1v::update(c1 a, const c1v &x) {
+  cblas_caxpy(std::min(x.dimension(), dimension()), &a, x.data(), 1, data(), 1);
   return *this;
 }
 
-template <> inline c2v &c2v::update(c2 a, const c2v &x) {
-  cblas_zaxpy(std::min(x._dimension, _dimension), &a, x._data.data(), 1, _data.data(), 1);
+template <> template <> inline c1v &c1v::update(r1 a, const r1v &x) {
+  cblas_saxpy(std::min(x.dimension(), dimension()), a, x.data(), 1, reinterpret_cast<r1 *>(data()), 2);
+  return *this;
+}
+
+template <> template <> inline c2v &c2v::update(c2 a, const c2v &x) {
+  cblas_zaxpy(std::min(x.dimension(), dimension()), &a, x.data(), 1, data(), 1);
+  return *this;
+}
+
+template <> template <> inline c2v &c2v::update(r2 a, const r2v &x) {
+  cblas_daxpy(std::min(x.dimension(), dimension()), a, x.data(), 1, reinterpret_cast<r2 *>(data()), 2);
   return *this;
 }
 
 template <> inline r1v &r1v::scale(r1 x) {
-  cblas_sscal(_dimension, x, _data.data(), 1);
+  cblas_sscal(dimension(), x, data(), 1);
   return *this;
 }
 
 template <> inline r2v &r2v::scale(r2 x) {
-  cblas_dscal(_dimension, x, _data.data(), 1);
+  cblas_dscal(dimension(), x, data(), 1);
   return *this;
 }
 
 template <> inline c1v &c1v::scale(c1 x) {
-  cblas_cscal(_dimension, &x, _data.data(), 1);
+  cblas_cscal(dimension(), &x, data(), 1);
   return *this;
 }
 
 template <> inline c2v &c2v::scale(c2 x) {
-  cblas_zscal(_dimension, &x, _data.data(), 1);
+  cblas_zscal(dimension(), &x, data(), 1);
   return *this;
 }
 
 template <> inline r1v &r1v::copy(const r1v &x) {
-  cblas_scopy(std::min(x._dimension, _dimension), x._data.data(), 1, _data.data(), 1);
-  if (_dimension > x._dimension)
-    std::fill(_data.data() + x._dimension, _data.data() + _dimension, 0.0f);
+  cblas_scopy(std::min(x.dimension(), dimension()), x.data(), 1, data(), 1);
+  if (dimension() > x.dimension())
+    std::fill(data() + x.dimension(), data() + dimension(), 0.0f);
   return *this;
 }
 
 template <> inline r2v &r2v::copy(const r2v &x) {
-  cblas_dcopy(std::min(x._dimension, _dimension), x._data.data(), 1, _data.data(), 1);
-  if (_dimension > x._dimension)
-    std::fill(_data.data() + x._dimension, _data.data() + _dimension, 0.0);
+  cblas_dcopy(std::min(x.dimension(), dimension()), x.data(), 1, data(), 1);
+  if (dimension() > x.dimension())
+    std::fill(data() + x.dimension(), data() + dimension(), 0.0);
   return *this;
 }
 
 template <> inline c1v &c1v::copy(const c1v &x) {
-  cblas_ccopy(std::min(x._dimension, _dimension), x._data.data(), 1, _data.data(), 1);
-  if (_dimension > x._dimension)
-    std::fill(_data.data() + x._dimension, _data.data() + _dimension, 0.0f);
+  cblas_ccopy(std::min(x.dimension(), dimension()), x.data(), 1, data(), 1);
+  if (dimension() > x.dimension())
+    std::fill(data() + x.dimension(), data() + dimension(), 0.0f);
   return *this;
 }
 
 template <> inline c2v &c2v::copy(const c2v &x) {
-  cblas_zcopy(std::min(x._dimension, _dimension), x._data.data(), 1, _data.data(), 1);
-  if (_dimension > x._dimension)
-    std::fill(_data.data() + x._dimension, _data.data() + _dimension, 0.0);
+  cblas_zcopy(std::min(x.dimension(), dimension()), x.data(), 1, data(), 1);
+  if (dimension() > x.dimension())
+    std::fill(data() + x.dimension(), data() + dimension(), 0.0);
   return *this;
 }
 
-template <> inline r1 r1v::l1_norm() const { return cblas_sasum(_dimension, _data.data(), 1); }
+template <> inline r1 r1v::l1_norm() const { return cblas_sasum(dimension(), data(), 1); }
 
-template <> inline r2 r2v::l1_norm() const { return cblas_dasum(_dimension, _data.data(), 1); }
+template <> inline r2 r2v::l1_norm() const { return cblas_dasum(dimension(), data(), 1); }
 
-template <> inline c1 c1v::l1_norm() const { return cblas_scasum(_dimension, _data.data(), 1); }
+template <> inline c1 c1v::l1_norm() const { return cblas_scasum(dimension(), data(), 1); }
 
-template <> inline c2 c2v::l1_norm() const { return cblas_dzasum(_dimension, _data.data(), 1); }
+template <> inline c2 c2v::l1_norm() const { return cblas_dzasum(dimension(), data(), 1); }
 
-template <> inline r1 r1v::l2_norm() const { return cblas_snrm2(_dimension, _data.data(), 1); }
+template <> inline r1 r1v::l2_norm() const { return cblas_snrm2(dimension(), data(), 1); }
 
-template <> inline r2 r2v::l2_norm() const { return cblas_dnrm2(_dimension, _data.data(), 1); }
+template <> inline r2 r2v::l2_norm() const { return cblas_dnrm2(dimension(), data(), 1); }
 
-template <> inline c1 c1v::l2_norm() const { return cblas_scnrm2(_dimension, _data.data(), 1); }
+template <> inline c1 c1v::l2_norm() const { return cblas_scnrm2(dimension(), data(), 1); }
 
-template <> inline c2 c2v::l2_norm() const { return cblas_dznrm2(_dimension, _data.data(), 1); }
+template <> inline c2 c2v::l2_norm() const { return cblas_dznrm2(dimension(), data(), 1); }
 
-template <> inline r1 r1v::l2_norm_sqr() const { return cblas_sdot(_dimension, _data.data(), 1, _data.data(), 1); }
+template <> inline r1 r1v::l2_norm_sqr() const { return cblas_sdot(dimension(), data(), 1, data(), 1); }
 
-template <> inline r2 r2v::l2_norm_sqr() const { return cblas_ddot(_dimension, _data.data(), 1, _data.data(), 1); }
+template <> inline r2 r2v::l2_norm_sqr() const { return cblas_ddot(dimension(), data(), 1, data(), 1); }
 
 template <> inline c1 c1v::l2_norm_sqr() const {
   c1 result;
-  cblas_cdotc_sub(_dimension, _data.data(), 1, _data.data(), 1, &result);
+  cblas_cdotc_sub(dimension(), data(), 1, data(), 1, &result);
   return result;
 }
 
 template <> inline c2 c2v::l2_norm_sqr() const {
   c2 result;
-  cblas_zdotc_sub(_dimension, _data.data(), 1, _data.data(), 1, &result);
+  cblas_zdotc_sub(dimension(), data(), 1, data(), 1, &result);
   return result;
 }
 
-template <> inline r1 r1v::dot(const r1v &x) const {
-  return cblas_sdot(std::min(x._dimension, _dimension), x._data.data(), 1, _data.data(), 1);
+inline r1 dot(const r1v &x, const r1v &y) {
+  return cblas_sdot(std::min(x.dimension(), y.dimension()), x.data(), 1, y.data(), 1);
 }
 
-template <> inline r2 r2v::dot(const r2v &x) const {
-  return cblas_ddot(std::min(x._dimension, _dimension), x._data.data(), 1, _data.data(), 1);
+inline r2 dot(const r2v &x, const r2v &y) {
+  return cblas_ddot(std::min(x.dimension(), y.dimension()), x.data(), 1, y.data(), 1);
 }
 
-template <> inline c1 c1v::dot(const c1v &x) const {
+inline c1 dot(const c1v &x, const c1v &y) {
   c1 result;
-  cblas_cdotc_sub(std::min(_dimension, x._dimension), _data.data(), 1, x._data.data(), 1, &result);
+  cblas_cdotc_sub(std::min(y.dimension(), x.dimension()), y.data(), 1, x.data(), 1, &result);
   return result;
 }
 
-template <> inline c2 c2v::dot(const c2v &x) const {
+inline c2 dot(const c2v &x, const c2v &y) {
   c2 result;
-  cblas_zdotc_sub(std::min(_dimension, x._dimension), _data.data(), 1, x._data.data(), 1, &result);
+  cblas_zdotc_sub(std::min(y.dimension(), x.dimension()), y.data(), 1, x.data(), 1, &result);
   return result;
 }
 
@@ -326,7 +339,42 @@ public:
   c2 l2_norm_sqr() const;
 };
 
-
 } // namespace lila
+
+namespace translate {
+
+template <class T> struct to_object<std::complex<T>> {
+  static core::T_sp convert(const std::complex<T> &v) { return core::Complex_O::create(v.real(), v.imag()); }
+};
+
+template <> struct from_object<std::complex<float>, std::true_type> {
+  typedef std::complex<float> DeclareType;
+  DeclareType _v;
+
+  from_object(core::T_sp o) {
+    if (gctools::IsA<core::Complex_sp>(o)) {
+      _v = std::complex<double>(core::clasp_to_float(gctools::As<core::Complex_sp>(o)->real()),
+                                core::clasp_to_float(gctools::As<core::Complex_sp>(o)->imaginary()));
+    } else {
+      _v = core::clasp_to_float(o);
+    }
+  }
+};
+
+template <> struct from_object<std::complex<double>, std::true_type> {
+  typedef std::complex<double> DeclareType;
+  DeclareType _v;
+
+  from_object(core::T_sp o) {
+    if (gctools::IsA<core::Complex_sp>(o)) {
+      _v = std::complex<double>(core::clasp_to_double(gctools::As<core::Complex_sp>(o)->real()),
+                                core::clasp_to_double(gctools::As<core::Complex_sp>(o)->imaginary()));
+    } else {
+      _v = core::clasp_to_double(o);
+    }
+  }
+};
+
+} // namespace translate
 
 #endif
