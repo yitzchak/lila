@@ -1,5 +1,4 @@
 #include <clasp/clasp.h>
-#include <clasp/core/translators.h>
 #include <lila/lila.h>
 
 namespace lila {
@@ -182,6 +181,90 @@ CL_LISPIFY_NAME("l2_norm_sqr")
 CL_DEFMETHOD c2 ComplexDoubleVector_O::l2_norm_sqr() const { return _Value.l2_norm_sqr(); }
 
 // CL_LAMBDA(x y)
+CL_LISPIFY_NAME("cross");
+CL_DEFUN core::T_sp lila__cross(Vector_sp x, Vector_sp y) {
+  if (gctools::IsA<RealDoubleVector_sp>(x)) {
+    if (gctools::IsA<RealDoubleVector_sp>(y)) {
+      auto res = gctools::GC<RealDoubleVector_O>::allocate_with_default_constructor();
+      res->_Value.cross(gctools::As<RealDoubleVector_sp>(x)->_Value, gctools::As<RealDoubleVector_sp>(y)->_Value);
+      return res;
+    }
+    if (gctools::IsA<ComplexDoubleVector_sp>(y)) {
+      auto res = gctools::GC<ComplexDoubleVector_O>::allocate_with_default_constructor();
+      res->_Value.cross(gctools::As<RealDoubleVector_sp>(x)->_Value, gctools::As<ComplexDoubleVector_sp>(y)->_Value);
+      return res;
+    }
+    if (gctools::IsA<RealSingleVector_sp>(y)) {
+      auto res = gctools::GC<RealDoubleVector_O>::allocate_with_default_constructor();
+      res->_Value.cross(gctools::As<RealDoubleVector_sp>(x)->_Value, gctools::As<RealSingleVector_sp>(y)->_Value);
+      return res;
+    }
+    {
+      auto res = gctools::GC<ComplexDoubleVector_O>::allocate_with_default_constructor();
+      res->_Value.cross(gctools::As<RealDoubleVector_sp>(x)->_Value, gctools::As<ComplexSingleVector_sp>(y)->_Value);
+      return res;
+    }
+  }
+
+  if (gctools::IsA<ComplexDoubleVector_sp>(x)) {
+    auto res = gctools::GC<ComplexDoubleVector_O>::allocate_with_default_constructor();
+    if (gctools::IsA<RealDoubleVector_sp>(y)) {
+      res->_Value.cross(gctools::As<ComplexDoubleVector_sp>(x)->_Value, gctools::As<RealDoubleVector_sp>(y)->_Value);
+    } else if (gctools::IsA<ComplexDoubleVector_sp>(y)) {
+      res->_Value.cross(gctools::As<ComplexDoubleVector_sp>(x)->_Value, gctools::As<ComplexDoubleVector_sp>(y)->_Value);
+    } else if (gctools::IsA<RealSingleVector_sp>(y)) {
+      res->_Value.cross(gctools::As<ComplexDoubleVector_sp>(x)->_Value, gctools::As<RealSingleVector_sp>(y)->_Value);
+    } else {
+      res->_Value.cross(gctools::As<ComplexDoubleVector_sp>(x)->_Value, gctools::As<ComplexSingleVector_sp>(y)->_Value);
+    }
+    return res;
+  }
+
+  if (gctools::IsA<RealSingleVector_sp>(x)) {
+    if (gctools::IsA<RealDoubleVector_sp>(y)) {
+      auto res = gctools::GC<RealDoubleVector_O>::allocate_with_default_constructor();
+      res->_Value.cross(gctools::As<RealSingleVector_sp>(x)->_Value, gctools::As<RealDoubleVector_sp>(y)->_Value);
+      return res;
+    }
+    if (gctools::IsA<ComplexDoubleVector_sp>(y)) {
+      auto res = gctools::GC<ComplexDoubleVector_O>::allocate_with_default_constructor();
+      res->_Value.cross(gctools::As<RealSingleVector_sp>(x)->_Value, gctools::As<ComplexDoubleVector_sp>(y)->_Value);
+      return res;
+    }
+    if (gctools::IsA<RealSingleVector_sp>(y)) {
+      auto res = gctools::GC<RealSingleVector_O>::allocate_with_default_constructor();
+      res->_Value.cross(gctools::As<RealSingleVector_sp>(x)->_Value, gctools::As<RealSingleVector_sp>(y)->_Value);
+      return res;
+    }
+    {
+      auto res = gctools::GC<ComplexSingleVector_O>::allocate_with_default_constructor();
+      res->_Value.cross(gctools::As<RealSingleVector_sp>(x)->_Value, gctools::As<ComplexSingleVector_sp>(y)->_Value);
+      return res;
+    }
+  }
+
+  if (gctools::IsA<RealDoubleVector_sp>(y)) {
+    auto res = gctools::GC<ComplexDoubleVector_O>::allocate_with_default_constructor();
+    res->_Value.cross(gctools::As<ComplexSingleVector_sp>(x)->_Value, gctools::As<RealDoubleVector_sp>(y)->_Value);
+    return res;
+  }
+  if (gctools::IsA<ComplexDoubleVector_sp>(y)) {
+    auto res = gctools::GC<ComplexDoubleVector_O>::allocate_with_default_constructor();
+    res->_Value.cross(gctools::As<ComplexSingleVector_sp>(x)->_Value, gctools::As<ComplexDoubleVector_sp>(y)->_Value);
+    return res;
+  }
+  if (gctools::IsA<RealSingleVector_sp>(y)) {
+    auto res = gctools::GC<ComplexSingleVector_O>::allocate_with_default_constructor();
+    res->_Value.cross(gctools::As<ComplexSingleVector_sp>(x)->_Value, gctools::As<RealSingleVector_sp>(y)->_Value);
+    return res;
+  }
+  {
+    auto res = gctools::GC<ComplexSingleVector_O>::allocate_with_default_constructor();
+    res->_Value.cross(gctools::As<ComplexSingleVector_sp>(x)->_Value, gctools::As<ComplexSingleVector_sp>(y)->_Value);
+    return res;
+  }
+}
+
 CL_LISPIFY_NAME("dot");
 CL_DEFUN core::T_sp lila__dot(Vector_sp x, Vector_sp y) {
   if (gctools::IsA<RealDoubleVector_sp>(x)) {
@@ -251,6 +334,75 @@ CL_DEFUN core::T_sp lila__dot(Vector_sp x, Vector_sp y) {
       dot(gctools::As<ComplexSingleVector_sp>(x)->_Value, gctools::As<ComplexSingleVector_sp>(y)->_Value));
 }
 
+CL_LISPIFY_NAME("dotc");
+CL_DEFUN core::T_sp lila__dotc(Vector_sp x, Vector_sp y) {
+  if (gctools::IsA<RealDoubleVector_sp>(x)) {
+    if (gctools::IsA<RealDoubleVector_sp>(y)) {
+      return core::clasp_make_double_float(
+          dotc(gctools::As<RealDoubleVector_sp>(x)->_Value, gctools::As<RealDoubleVector_sp>(y)->_Value));
+    }
+    if (gctools::IsA<ComplexDoubleVector_sp>(y)) {
+      return translate::to_object<c2>::convert(
+          dotc((c2v)gctools::As<RealDoubleVector_sp>(x)->_Value, gctools::As<ComplexDoubleVector_sp>(y)->_Value));
+    }
+    if (gctools::IsA<RealSingleVector_sp>(y)) {
+      return core::clasp_make_double_float(
+          dotc(gctools::As<RealDoubleVector_sp>(x)->_Value, (r2v)gctools::As<RealSingleVector_sp>(y)->_Value));
+    }
+    return translate::to_object<c2>::convert(
+        dotc((c2v)gctools::As<RealDoubleVector_sp>(x)->_Value, (c2v)gctools::As<ComplexSingleVector_sp>(y)->_Value));
+  }
+
+  if (gctools::IsA<ComplexDoubleVector_sp>(x)) {
+    if (gctools::IsA<RealDoubleVector_sp>(y)) {
+      return translate::to_object<c2>::convert(
+          dotc(gctools::As<ComplexDoubleVector_sp>(x)->_Value, (c2v)gctools::As<RealDoubleVector_sp>(y)->_Value));
+    }
+    if (gctools::IsA<ComplexDoubleVector_sp>(y)) {
+      return translate::to_object<c2>::convert(
+          dotc((c2v)gctools::As<ComplexDoubleVector_sp>(x)->_Value, gctools::As<ComplexDoubleVector_sp>(y)->_Value));
+    }
+    if (gctools::IsA<RealSingleVector_sp>(y)) {
+      return translate::to_object<c2>::convert(
+          dotc(gctools::As<ComplexDoubleVector_sp>(x)->_Value, (c2v)gctools::As<RealSingleVector_sp>(y)->_Value));
+    }
+    return translate::to_object<c2>::convert(
+        dotc(gctools::As<ComplexDoubleVector_sp>(x)->_Value, (c2v)gctools::As<ComplexSingleVector_sp>(y)->_Value));
+  }
+
+  if (gctools::IsA<RealSingleVector_sp>(x)) {
+    if (gctools::IsA<RealDoubleVector_sp>(y)) {
+      return core::clasp_make_double_float(
+          dotc((r2v)gctools::As<RealSingleVector_sp>(x)->_Value, gctools::As<RealDoubleVector_sp>(y)->_Value));
+    }
+    if (gctools::IsA<ComplexDoubleVector_sp>(y)) {
+      return translate::to_object<c2>::convert(
+          dotc((c2v)gctools::As<RealSingleVector_sp>(x)->_Value, gctools::As<ComplexDoubleVector_sp>(y)->_Value));
+    }
+    if (gctools::IsA<RealSingleVector_sp>(y)) {
+      return core::clasp_make_single_float(
+          dotc(gctools::As<RealSingleVector_sp>(x)->_Value, gctools::As<RealSingleVector_sp>(y)->_Value));
+    }
+    return translate::to_object<c1>::convert(
+        dotc((c1v)gctools::As<RealSingleVector_sp>(x)->_Value, gctools::As<ComplexSingleVector_sp>(y)->_Value));
+  }
+
+  if (gctools::IsA<RealDoubleVector_sp>(y)) {
+    return translate::to_object<c2>::convert(
+        dotc((c2v)gctools::As<ComplexSingleVector_sp>(x)->_Value, (c2v)gctools::As<RealDoubleVector_sp>(y)->_Value));
+  }
+  if (gctools::IsA<ComplexDoubleVector_sp>(y)) {
+    return translate::to_object<c2>::convert(
+        dotc((c2v)gctools::As<ComplexSingleVector_sp>(x)->_Value, gctools::As<ComplexDoubleVector_sp>(y)->_Value));
+  }
+  if (gctools::IsA<RealSingleVector_sp>(y)) {
+    return translate::to_object<c1>::convert(
+        dotc(gctools::As<ComplexSingleVector_sp>(x)->_Value, (c1v)gctools::As<RealSingleVector_sp>(y)->_Value));
+  }
+  return translate::to_object<c1>::convert(
+      dotc(gctools::As<ComplexSingleVector_sp>(x)->_Value, gctools::As<ComplexSingleVector_sp>(y)->_Value));
+}
+
 CL_LAMBDA(core:&va-rest args)
 CL_LISPIFY_NAME("linear-combination");
 CL_DEFUN Vector_sp lila__linear_combination(core::Vaslist_sp args) {
@@ -263,7 +415,7 @@ CL_DEFUN Vector_sp lila__linear_combination(core::Vaslist_sp args) {
     auto res = gctools::GC<RealDoubleVector_O>::allocate_with_default_constructor();
     res->_Value.resize(dimension);
     while (args->remaining_nargs() > 0) {
-      double s = core::clasp_to_double(args->next_arg());
+      r2 s = core::clasp_to_double(args->next_arg());
       Vector_sp x = gctools::As<Vector_sp>(args->next_arg());
       if (gctools::IsA<RealDoubleVector_sp>(x)) {
         res->_Value.update(s, gctools::As<RealDoubleVector_sp>(x)->_Value);

@@ -1,0 +1,37 @@
+(in-package :lila)
+
+(defun (setf mref) (new-value v r c)
+  (setf-mref v new-value r c))
+
+(defun read-matrix (stream char n)
+  (declare (ignore char n))
+  (let ((x (read stream t nil t)))
+    (apply (ecase (get-element-tag x)
+             (#b11 #'complex-double-matrix)
+             (#b10 #'complex-single-matrix)
+             (#b01 #'real-double-matrix)
+             (#b00 #'real-single-matrix))
+           x)))
+
+(set-dispatch-macro-character #\# #\M #'read-matrix)
+
+(defmethod print-object ((object matrix) stream)
+  (if *print-readably*
+      (loop for row below (row-dimension object)
+            initially (write-string "#M" stream)
+            finally (write-char #\) stream)
+            do (write-char (if (cl:zerop row) #\( #\Space) stream)
+               (loop for column below (column-dimension object)
+                     finally (write-char #\) stream)
+                     do (write-char (if (cl:zerop column) #\( #\Space) stream)
+                        (write (mref object row column) :stream stream)))                     
+      (print-unreadable-object (object stream :type t)
+        (loop for row below (row-dimension object)
+              unless (cl:zerop row)
+                do (write-char #\Space stream)
+              do (loop for column below (column-dimension object)
+                       finally (write-char #\) stream)
+                       do (write-char (if (cl:zerop column) #\( #\Space) stream)
+                          (write (mref object row column) :stream stream)))))
+  object)
+

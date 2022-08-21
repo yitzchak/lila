@@ -10,9 +10,11 @@ typedef CBLAS_ORDER CBLAS_LAYOUT;
 
 PACKAGE_USE("COMMON-LISP");
 NAMESPACE_PACKAGE_ASSOCIATION(lila, lila_pkg, "LILA");
-//SYMBOL_SHADOW_EXPORT_SC_(lila_pkg, vector);
+// SYMBOL_SHADOW_EXPORT_SC_(lila_pkg, vector);
 
 namespace lila {
+
+typedef enum { transpose_none = CblasNoTrans, transpose_normal = CblasTrans, transpose_hermitian = CblasConjTrans } transpose_type;
 
 template <class T> class matrix;
 
@@ -54,6 +56,7 @@ public:
   template <class U> V &update(U a, const vector<U> &x);
   V &scale(T a);
   V &copy(const V &x);
+  V &product(T alpha, const M &A, transpose_type type, const V &x, T beta);
 
   inline V &operator*=(T a) { return scale(a); }
   inline V &operator+=(const V &x) { return update(1, x); }
@@ -62,47 +65,64 @@ public:
   T l1_norm() const;
   T l2_norm() const;
   T l2_norm_sqr() const;
+
+  template <class M, class N> inline V &cross(const vector<M> &x, const vector<N> &y) {
+    _data.resize(3);
+    _dimension = 3;
+    _data[0] = static_cast<T>(x[1]) * static_cast<T>(y[2]) - static_cast<T>(x[2]) * static_cast<T>(y[1]);
+    _data[1] = static_cast<T>(x[2]) * static_cast<T>(y[0]) - static_cast<T>(x[0]) * static_cast<T>(y[2]);
+    _data[2] = static_cast<T>(x[0]) * static_cast<T>(y[1]) - static_cast<T>(x[1]) * static_cast<T>(y[0]);
+    return *this;
+  }
 };
 
 template <class T> class matrix {
   using V = vector<T>;
   using M = matrix<T>;
 
-  static std::allocator<T> alloc;
-
   std::size_t _row_dimension, _column_dimension, _size;
   bool _column_major = false;
-  T *_data;
+  gctools::Vec0<T> _data;
 
   friend class vector<T>;
 
-  std::size_t index(std::size_t row, std::size_t column) const {
+  inline std::size_t index(std::size_t row, std::size_t column) const {
     return _column_major ? column * _row_dimension + row : row * _column_dimension + column;
   }
 
   CBLAS_LAYOUT layout() const { return _column_major ? CblasColMajor : CblasRowMajor; }
 
 public:
-  matrix(std::size_t row_dimension, std::size_t column_dimension, const T &value = 0)
+  inline T *data() { return _data.data(); }
+  inline const T *data() const { return _data.data(); }
+  inline std::size_t column_dimension() const { return _column_dimension; }
+  inline std::size_t row_dimension() const { return _row_dimension; }
+  inline bool column_major() const { return _column_major; }
+
+  matrix(std::size_t row_dimension = 0, std::size_t column_dimension = 0, const T &value = 0)
       : _row_dimension(row_dimension), _column_dimension(column_dimension) {
-    _size = _row_dimension * _column_dimension;
-    _data = alloc.allocate(_size);
-    std::fill(_data, _data + _size, value);
+    _data.resize(_row_dimension * _column_dimension, value);
   }
 
-  matrix(const M &other)
-      : _column_major(other._column_major), _row_dimension(other._row_dimension), _column_dimension(other._column_dimension),
-        _size(other._size) {}
+  template <class U>
+  matrix(const matrix<U> &other)
+      : _column_major(other.column_major()), _row_dimension(other.row_dimension()), _column_dimension(other.column_dimension()) {
+    _data.resize(_row_dimension * _column_dimension);
+    for (int i = 0; i < _row_dimension; i++)
+      for (int j = 0; j < _column_dimension; j++)
+        _data(i, j) = other(i, j);
+  }
 
-  ~matrix() { alloc.deallocate(_data, _size); }
+  inline M &resize(std::size_t row_dimension = 0, std::size_t column_dimension = 0, const T &value = 0) {
+    _row_dimension = row_dimension;
+    _column_dimension = column_dimension;
+    _data.resize(row_dimension * column_dimension, value);
+    return *this;
+  }
+  inline T operator()(std::size_t row, std::size_t column) const { return data()[index(row, column)]; }
+  inline T &operator()(std::size_t row, std::size_t column) { return data()[index(row, column)]; }
 
-  std::size_t column_dimension() const { return _column_dimension; }
-  std::size_t row_dimension() const { return _row_dimension; }
-
-  T operator()(std::size_t row, std::size_t column) const { return _data[index(row, column)]; }
-  T &operator()(std::size_t row, std::size_t column) { return _data[index(row, column)]; }
-
-  void transpose() {
+  inline void transpose() {
     _column_major = !_column_major;
     std::swap(_row_dimension, _column_dimension);
   }
@@ -120,8 +140,6 @@ typedef matrix<r1> r1m;
 typedef matrix<r2> r2m;
 typedef matrix<c1> c1m;
 typedef matrix<c2> c2m;
-
-template <class T> std::allocator<T> matrix<T>::alloc = std::allocator<T>();
 
 template <> template <> inline r1v &r1v::update(r1 a, const r1v &x) {
   cblas_saxpy(std::min(x.dimension(), dimension()), a, x.data(), 1, data(), 1);
@@ -201,6 +219,30 @@ template <> inline c2v &c2v::copy(const c2v &x) {
   return *this;
 }
 
+template <> inline r1v &r1v::product(r1 alpha, const r1m &A, transpose_type type, const r1v &x, r1 beta) {
+  cblas_sgemv(A.layout(), static_cast<CBLAS_TRANSPOSE>(type), A.row_dimension(), A.column_dimension(), alpha, A.data(),
+              A.row_dimension(), x.data(), 1, beta, data(), 1);
+  return *this;
+}
+
+template <> inline r2v &r2v::product(r2 alpha, const r2m &A, transpose_type type, const r2v &x, r2 beta) {
+  cblas_dgemv(A.layout(), static_cast<CBLAS_TRANSPOSE>(type), A.row_dimension(), A.column_dimension(), alpha, A.data(),
+              A.row_dimension(), x.data(), 1, beta, data(), 1);
+  return *this;
+}
+
+template <> inline c1v &c1v::product(c1 alpha, const c1m &A, transpose_type type, const c1v &x, c1 beta) {
+  cblas_cgemv(A.layout(), static_cast<CBLAS_TRANSPOSE>(type), A.row_dimension(), A.column_dimension(), &alpha, A.data(),
+              A.row_dimension(), x.data(), 1, &beta, data(), 1);
+  return *this;
+}
+
+template <> inline c2v &c2v::product(c2 alpha, const c2m &A, transpose_type type, const c2v &x, c2 beta) {
+  cblas_zgemv(A.layout(), static_cast<CBLAS_TRANSPOSE>(type), A.row_dimension(), A.column_dimension(), &alpha, A.data(),
+              A.row_dimension(), x.data(), 1, &beta, data(), 1);
+  return *this;
+}
+
 template <> inline r1 r1v::l1_norm() const { return cblas_sasum(dimension(), data(), 1); }
 
 template <> inline r2 r2v::l1_norm() const { return cblas_dasum(dimension(), data(), 1); }
@@ -233,17 +275,44 @@ template <> inline c2 c2v::l2_norm_sqr() const {
   return result;
 }
 
+template <class T> inline vector<T> &cross(const vector<T> &x, const vector<T> &y) {
+  vector<T> result(3);
+  result.cross(x, y);
+  return result;
+}
+
+template <class T> T triple(const vector<T> &x, const vector<T> &y, const vector<T> &z) {
+  return x[0] * y[1] * z[2] - x[1] * y[0] * z[2] + x[2] * y[0] * z[1] - x[0] * y[2] * z[1] + +x[1] * y[2] * z[0] -
+         x[2] * y[1] * z[0];
+}
+
 inline r1 dot(const r1v &x, const r1v &y) { return cblas_sdot(std::min(x.dimension(), y.dimension()), x.data(), 1, y.data(), 1); }
 
 inline r2 dot(const r2v &x, const r2v &y) { return cblas_ddot(std::min(x.dimension(), y.dimension()), x.data(), 1, y.data(), 1); }
 
 inline c1 dot(const c1v &x, const c1v &y) {
   c1 result;
-  cblas_cdotc_sub(std::min(y.dimension(), x.dimension()), y.data(), 1, x.data(), 1, &result);
+  cblas_cdotu_sub(std::min(y.dimension(), x.dimension()), y.data(), 1, x.data(), 1, &result);
   return result;
 }
 
 inline c2 dot(const c2v &x, const c2v &y) {
+  c2 result;
+  cblas_zdotu_sub(std::min(y.dimension(), x.dimension()), y.data(), 1, x.data(), 1, &result);
+  return result;
+}
+
+inline r1 dotc(const r1v &x, const r1v &y) { return cblas_sdot(std::min(x.dimension(), y.dimension()), x.data(), 1, y.data(), 1); }
+
+inline r2 dotc(const r2v &x, const r2v &y) { return cblas_ddot(std::min(x.dimension(), y.dimension()), x.data(), 1, y.data(), 1); }
+
+inline c1 dotc(const c1v &x, const c1v &y) {
+  c1 result;
+  cblas_cdotc_sub(std::min(y.dimension(), x.dimension()), y.data(), 1, x.data(), 1, &result);
+  return result;
+}
+
+inline c2 dotc(const c2v &x, const c2v &y) {
   c2 result;
   cblas_zdotc_sub(std::min(y.dimension(), x.dimension()), y.data(), 1, x.data(), 1, &result);
   return result;
@@ -343,6 +412,90 @@ public:
   c2 l1_norm() const;
   c2 l2_norm() const;
   c2 l2_norm_sqr() const;
+};
+
+SMART(Matrix)
+
+class Matrix_O : public core::CxxObject_O {
+  LISP_ABSTRACT_CLASS(lila, lila_pkg, Matrix_O, "matrix", core::CxxObject_O);
+
+public:
+  Matrix_O() {}
+};
+
+SMART(RealSingleMatrix);
+
+class RealSingleMatrix_O : public Matrix_O {
+  LISP_CLASS(lila, lila_pkg, RealSingleMatrix_O, "REAL-SINGLE-MATRIX", Matrix_O);
+  r1m _Value;
+
+public:
+  RealSingleMatrix_O() {}
+
+  static RealSingleMatrix_sp make(core::Vaslist_sp args);
+
+  r1m &value() { return _Value; }
+  const r1m &value() const { return _Value; }
+
+  std::size_t row_dimension() const;
+  std::size_t column_dimension() const;
+
+  r1 mref(std::size_t row, std::size_t column) const;
+  r1 setf_mref(r1 new_value, std::size_t row, std::size_t column);
+};
+
+SMART(RealDoubleMatrix);
+
+class RealDoubleMatrix_O : public Matrix_O {
+  LISP_CLASS(lila, lila_pkg, RealDoubleMatrix_O, "REAL-DOUBLE-MATRIX", Matrix_O);
+  r2m _Value;
+
+public:
+  RealDoubleMatrix_O() {}
+
+  static RealDoubleMatrix_sp make(core::Vaslist_sp args);
+
+  std::size_t row_dimension() const;
+  std::size_t column_dimension() const;
+
+  r2 mref(std::size_t row, std::size_t column) const;
+  r2 setf_mref(r2 new_value, std::size_t row, std::size_t column);
+};
+
+SMART(ComplexSingleMatrix);
+
+class ComplexSingleMatrix_O : public Matrix_O {
+  LISP_CLASS(lila, lila_pkg, ComplexSingleMatrix_O, "COMPLEX-SINGLE-MATRIX", Matrix_O);
+  c1m _Value;
+
+public:
+  ComplexSingleMatrix_O() {}
+
+  static ComplexSingleMatrix_sp make(core::Vaslist_sp args);
+
+  std::size_t row_dimension() const;
+  std::size_t column_dimension() const;
+
+  c1 mref(std::size_t row, std::size_t column) const;
+  c1 setf_mref(c1 new_value, std::size_t row, std::size_t column);
+};
+
+SMART(ComplexDoubleMatrix);
+
+class ComplexDoubleMatrix_O : public Matrix_O {
+  LISP_CLASS(lila, lila_pkg, ComplexDoubleMatrix_O, "COMPLEX-DOUBLE-MATRIX", Matrix_O);
+  c2m _Value;
+
+public:
+  ComplexDoubleMatrix_O() {}
+
+  static ComplexDoubleMatrix_sp make(core::Vaslist_sp args);
+
+  std::size_t row_dimension() const;
+  std::size_t column_dimension() const;
+
+  c2 mref(std::size_t row, std::size_t column) const;
+  c2 setf_mref(c2 new_value, std::size_t row, std::size_t column);
 };
 
 } // namespace lila

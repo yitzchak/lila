@@ -5,4 +5,6 @@
   :licence "LGPL-3.0"
   :serial t
   :components ((:file "interface")
-               (:file "vector")))
+               (:file "vector")
+               (:file "matrix")))
+
