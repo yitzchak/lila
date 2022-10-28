@@ -90,7 +90,7 @@ void vector_desc(core::T_sp obj, bool &double_vec, bool &complex_vec, std::size_
 }
 
 void vector_desc(core::Vaslist_sp args, bool &double_vec, bool &complex_vec, std::size_t &dimension) {
-  for (int i = args->remaining_nargs() - 1; i > -1; --i) {
+  for (int i = args->nargs() - 1; i > -1; --i) {
     vector_desc(args->next_arg_indexed(i), double_vec, complex_vec, dimension);
   }
 }
@@ -126,8 +126,8 @@ CL_EXPOSE void lila_startup() {
   pkg.def(
       "real-single-vector",
       +[](core::Vaslist_sp args) {
-        r1v res = r1v(args->total_nargs());
-        for (size_t i = 0; args->remaining_nargs() > 0; i++) {
+        r1v res = r1v(args->nargs());
+        for (size_t i = 0; args->nargs() > 0; i++) {
           res[i] = core::clasp_to_float(args->next_arg());
         }
         return res;
@@ -136,8 +136,8 @@ CL_EXPOSE void lila_startup() {
   pkg.def(
       "real-double-vector",
       +[](core::Vaslist_sp args) {
-        r2v res = r2v(args->total_nargs());
-        for (size_t i = 0; args->remaining_nargs() > 0; i++) {
+        r2v res = r2v(args->nargs());
+        for (size_t i = 0; args->nargs() > 0; i++) {
           res[i] = core::clasp_to_double(args->next_arg());
         }
         return res;
@@ -146,8 +146,8 @@ CL_EXPOSE void lila_startup() {
   pkg.def(
       "complex-single-vector",
       +[](core::Vaslist_sp args) {
-        c1v res = c1v(args->total_nargs());
-        for (size_t i = 0; args->remaining_nargs() > 0; i++) {
+        c1v res = c1v(args->nargs());
+        for (size_t i = 0; args->nargs() > 0; i++) {
           res[i] = translate::from_object<c1>(args->next_arg())._v;
         }
         return res;
@@ -156,8 +156,8 @@ CL_EXPOSE void lila_startup() {
   pkg.def(
       "complex-double-vector",
       +[](core::Vaslist_sp args) {
-        c2v res = c2v(args->total_nargs());
-        for (size_t i = 0; args->remaining_nargs() > 0; i++) {
+        c2v res = c2v(args->nargs());
+        for (size_t i = 0; args->nargs() > 0; i++) {
           res[i] = translate::from_object<c2>(args->next_arg())._v;
         }
         return res;
@@ -190,7 +190,7 @@ CL_EXPOSE void lila_startup() {
         vector_desc(args, double_vec, complex_vec, dimension);
         if (double_vec && complex_vec) {
           c2v *res = new c2v(dimension);
-          for (size_t i = 0; args->remaining_nargs() > 0; i++) {
+          for (size_t i = 0; args->nargs() > 0; i++) {
             core::WrappedPointer_sp wp_sp = gctools::As<core::WrappedPointer_sp>(args->next_arg());
             c2v *c2v_p = wp_sp->castOrNull<c2v>();
             c1v *c1v_p = wp_sp->castOrNull<c1v>();
@@ -209,7 +209,7 @@ CL_EXPOSE void lila_startup() {
         }
         if (double_vec) {
           r2v *res = new r2v(dimension);
-          for (size_t i = 0; args->remaining_nargs() > 0; i++) {
+          for (size_t i = 0; args->nargs() > 0; i++) {
             core::WrappedPointer_sp wp_sp = gctools::As<core::WrappedPointer_sp>(args->next_arg());
             r2v *r2v_p = wp_sp->castOrNull<r2v>();
             if (r2v_p) {
@@ -222,7 +222,7 @@ CL_EXPOSE void lila_startup() {
         }
         if (complex_vec) {
           c1v *res = new c1v(dimension);
-          for (size_t i = 0; args->remaining_nargs() > 0; i++) {
+          for (size_t i = 0; args->nargs() > 0; i++) {
             core::WrappedPointer_sp wp_sp = gctools::As<core::WrappedPointer_sp>(args->next_arg());
             c1v *c1v_p = wp_sp->castOrNull<c1v>();
             if (c1v_p) {
@@ -234,7 +234,7 @@ CL_EXPOSE void lila_startup() {
           return translate::to_object<c1v *, translate::adopt_pointer>::convert(res);
         }
         r1v *res = new r1v(dimension);
-        for (size_t i = 0; args->remaining_nargs() > 0; i++) {
+        for (size_t i = 0; args->nargs() > 0; i++) {
           res->update(1, *gctools::As<core::WrappedPointer_sp>(args->next_arg())->cast<r1v>());
         }
         return translate::to_object<r1v *, translate::adopt_pointer>::convert(res);
@@ -249,7 +249,7 @@ CL_EXPOSE void lila_startup() {
         vector_desc(args, double_vec, complex_vec, dimension);
         if (double_vec && complex_vec) {
           c2v *res = new c2v(dimension);
-          for (size_t i = 0; args->remaining_nargs() > 0; i++) {
+          for (size_t i = 0; args->nargs() > 0; i++) {
             std::complex<double> s = translate::from_object<c2>(args->next_arg())._v;
             core::WrappedPointer_sp wp_sp = gctools::As<core::WrappedPointer_sp>(args->next_arg());
             c2v *c2v_p = wp_sp->castOrNull<c2v>();
@@ -269,7 +269,7 @@ CL_EXPOSE void lila_startup() {
         }
         if (double_vec) {
           r2v *res = new r2v(dimension);
-          for (size_t i = 0; args->remaining_nargs() > 0; i++) {
+          for (size_t i = 0; args->nargs() > 0; i++) {
             double s = core::clasp_to_double(args->next_arg());
             core::WrappedPointer_sp wp_sp = gctools::As<core::WrappedPointer_sp>(args->next_arg());
             r2v *r2v_p = wp_sp->castOrNull<r2v>();
@@ -283,7 +283,7 @@ CL_EXPOSE void lila_startup() {
         }
         if (complex_vec) {
           c1v *res = new c1v(dimension);
-          for (size_t i = 0; args->remaining_nargs() > 0; i++) {
+          for (size_t i = 0; args->nargs() > 0; i++) {
             std::complex<float> s = translate::from_object<c1>(args->next_arg())._v;
             core::WrappedPointer_sp wp_sp = gctools::As<core::WrappedPointer_sp>(args->next_arg());
             c1v *c1v_p = wp_sp->castOrNull<c1v>();
@@ -296,7 +296,7 @@ CL_EXPOSE void lila_startup() {
           return translate::to_object<c1v *, translate::adopt_pointer>::convert(res);
         }
         r1v *res = new r1v(dimension);
-        for (size_t i = 0; args->remaining_nargs() > 0; i++) {
+        for (size_t i = 0; args->nargs() > 0; i++) {
           double s = core::clasp_to_float(args->next_arg());
           res->update(s, *gctools::As<core::WrappedPointer_sp>(args->next_arg())->cast<r1v>());
         }
